@@ -5,6 +5,7 @@ add_executable(sdgatt
 	main.c
 	logging.c
 	blzlib.c
+	blzlib_msgs.c
 )
 
 find_package(PkgConfig REQUIRED)
