@@ -110,6 +110,8 @@ blz_dev* blz_connect(blz* ctx, const uint8_t* mac)
 	return dev;
 }
 
+#if 0
+// unused: get services on device
 void blz_get_services(blz_dev* dev)
 {
 	char** uuids;
@@ -132,6 +134,7 @@ void blz_get_services(blz_dev* dev)
 
 	sd_bus_error_free(&error);
 }
+#endif
 
 void blz_disconnect(blz_dev* dev)
 {
@@ -277,10 +280,6 @@ int parse_msg_interfaces(sd_bus_message* m, const char* opath, blz_char* ch)
 		LOG_ERR("parse intf 6");
 		return r;
 	}
-}
-
-bool blz_resolve_services(blz* conn)
-{
 }
 
 static bool find_char(blz_char* ch)
@@ -534,10 +533,6 @@ error:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
 	return -1;
-}
-
-int blz_char_write_fd_close(blz_char* ch)
-{
 }
 
 void blz_loop(blz* conn)
