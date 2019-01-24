@@ -282,9 +282,61 @@ int parse_msg_interfaces(sd_bus_message* m, const char* opath, blz_char* ch)
 	}
 }
 
-static bool find_char(blz_char* ch)
+static int parse_msg_objects(sd_bus_message* m, blz_char* ch)
 {
 	const char* opath;
+
+	/* array of objects */
+	int r = sd_bus_message_enter_container(m, 'a', "{oa{sa{sv}}}");
+        if (r < 0) {
+		LOG_ERR("parse obj 1");
+                return r;
+	}
+
+	while (r = sd_bus_message_enter_container(m, 'e', "oa{sa{sv}}") > 0)
+	{
+		r = sd_bus_message_read_basic(m, 'o', &opath);
+		if (r < 0) {
+			LOG_ERR("parse obj 2");
+			return r;
+		}
+
+		LOG_INF("O %s", opath);
+
+		/* check if it is below our own device path, otherwise skip */
+		if (strncmp(opath, ch->dev->path, strlen(ch->dev->path)) == 0) {
+			r = parse_msg_interfaces(m, opath, ch);
+			if (r == 1000)
+				return r;
+		} else {
+			r = sd_bus_message_skip(m, "a{sa{sv}}");
+			if (r < 0) {
+				LOG_ERR("parse obj 4");
+				return r;
+			}
+		}
+
+		r = sd_bus_message_exit_container(m);
+                if (r < 0) {
+			LOG_ERR("parse obj 3");
+			return r;
+		}
+	}
+
+	if (r < 0) {
+		LOG_ERR("parse obj 4");
+		return r;
+	}
+
+	r = sd_bus_message_exit_container(m);
+	if (r < 0) {
+		LOG_ERR("parse obj 5");
+	}
+	return r;
+}
+
+static bool find_char(blz_char* ch)
+{
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
 
@@ -298,53 +350,7 @@ static bool find_char(blz_char* ch)
 		goto error;
 	}
 
-	/* array of objects */
-	r = sd_bus_message_enter_container(reply, 'a', "{oa{sa{sv}}}");
-        if (r < 0) {
-		LOG_ERR("parse obj 1");
-                goto error;
-	}
-
-	while (r = sd_bus_message_enter_container(reply, 'e', "oa{sa{sv}}") > 0)
-	{
-		r = sd_bus_message_read_basic(reply, 'o', &opath);
-		if (r < 0) {
-			LOG_ERR("parse obj 2");
-			goto error;
-		}
-
-		LOG_INF("O %s", opath);
-
-		/* check if it is below our own device path, otherwise skip */
-		if (strncmp(opath, ch->dev->path, strlen(ch->dev->path)) == 0) {
-			r = parse_msg_interfaces(reply, opath, ch);
-			if (r == 1000)
-				goto error; // exit
-		} else {
-			r = sd_bus_message_skip(reply, "a{sa{sv}}");
-			if (r < 0) {
-				LOG_ERR("parse obj 4");
-				return r;
-			}
-		}
-
-		r = sd_bus_message_exit_container(reply);
-                if (r < 0) {
-			LOG_ERR("parse obj 3");
-			goto error;
-		}
-	}
-
-	if (r < 0) {
-		LOG_ERR("parse obj 4");
-		goto error;
-	}
-
-	r = sd_bus_message_exit_container(reply);
-	if (r < 0) {
-		LOG_ERR("parse obj 5");
-		goto error;
-	}
+	r = parse_msg_objects(reply, ch);
 
 error:
 	sd_bus_error_free(&error);
