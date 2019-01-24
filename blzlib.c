@@ -8,6 +8,7 @@
 
 struct blz_context {
 	sd_bus*			bus;
+	char			hci[4];
 };
 
 struct blz_char {
@@ -38,14 +39,50 @@ void blz_fini(blz* ctx)
 	free(ctx);
 }
 
-bool blz_connect(blz* ctz, const char* mac)
+bool blz_connect(blz* ctx, const char* mac)
 {
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+
+	int r = sd_bus_call_method(ctx->bus,
+			"org.bluez",
+			"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2",
+			"org.bluez.Device1",
+			"Connect",
+			&error, NULL, "");
+
+	if (r < 0)
+		LOG_ERR("couldnt connect: %s", error.message);
+
+	sd_bus_error_free(&error);
+
+	char** uuids;
+	r = sd_bus_get_property_strv(ctx->bus,
+			"org.bluez",
+			"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2",
+			"org.bluez.Device1",
+			"UUIDs", &error, &uuids);
+
+	for (int i = 0; uuids[i] != NULL; i++)
+		LOG_INF("UUID %s", uuids[i]);
+
+	return r < 0 ? false : true;
 }
 
-void blz_disconnect(blz* conn)
+void blz_disconnect(blz* ctx)
 {
-	sd_bus_unref(conn->bus);
-	free(conn);
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+
+	int r = sd_bus_call_method(ctx->bus,
+			"org.bluez",
+			"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2",
+			"org.bluez.Device1",
+			"Disconnect",
+			&error, NULL, "");
+
+	if (r < 0)
+		LOG_ERR("couldnt disconnect: %s", error.message);
+
+	sd_bus_error_free(&error);
 }
 
 bool blz_resolve_services(blz* conn)
@@ -170,7 +207,7 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len)
 
 	r = sd_bus_call(ch->conn->bus, m, 0, &error, &reply);
 	if (r < 0) {
-		LOG_ERR("Failed to issue method call: %s", error.message);
+		LOG_ERR("BLZ failed to write: %s", error.message);
 		goto error;
 	}
 
@@ -261,7 +298,7 @@ bool blz_char_notify(blz_char* ch, blz_notify_handler_t cb)
 		&error, &reply, "");
 
 	if (r < 0) {
-		LOG_ERR("Failed to issue method call: %s", error.message);
+		LOG_ERR("BLZ Failed to start notify: %s", error.message);
 	}
 }
 
@@ -281,7 +318,7 @@ int blz_char_write_fd_acquire(blz_char* ch)
 		"a{sv}", 0);
 
 	if (r < 0) {
-		LOG_ERR("Failed to issue method call: %s", error.message);
+		LOG_ERR("BLZ Failed acquire write: %s", error.message);
 		goto error;
 	}
 
