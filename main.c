@@ -25,7 +25,6 @@ static void signal_handler(__attribute__((unused)) int signo)
 
 int main(int argc, char** argv)
 {
-	bool r = false;
 	int fd;
 
 	/* register the signal SIGINT handler */
@@ -37,11 +36,12 @@ int main(int argc, char** argv)
 
 	log_open("sdgatt");
 
-	blz* blz = blz_init();
+	blz* blz = blz_init("hci0");
 
 	LOG_INF("Connecting...");
-	r = blz_connect(blz, "CF:D6:E8:4B:A0:D2"); // C7:2D:19:62:10:C1
-	if (!r)
+	uint8_t mac[] = { 0xCF, 0xD6, 0xE8, 0x4B, 0xA0, 0xD2 };
+	blz_dev* dev = blz_connect(blz, mac); // C7:2D:19:62:10:C1
+	if (!dev)
 		goto exit;
 
 	blz_resolve_services(blz);
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 	}
 
 exit:
-	blz_disconnect(blz);
+	blz_disconnect(dev);
 	blz_fini(blz);
 	close(fd);
 	log_close();

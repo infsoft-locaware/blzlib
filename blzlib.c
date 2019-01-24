@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <systemd/sd-bus.h>
@@ -6,9 +7,16 @@
 
 #include "blzlib.h"
 
+#define DBUS_PATH_MAX_LEN	255
+
 struct blz_context {
 	sd_bus*			bus;
-	char			hci[4];
+	char			path[DBUS_PATH_MAX_LEN];
+};
+
+struct blz_dev {
+	struct blz_context*	ctx;
+	char			path[DBUS_PATH_MAX_LEN];
 };
 
 struct blz_char {
@@ -16,21 +24,38 @@ struct blz_char {
 	blz_notify_handler_t	notify_cb;
 };
 
-blz* blz_init(void)
+blz* blz_init(const char* dev)
 {
-	struct blz_context* blz = calloc(1, sizeof(struct blz_context));
-	if (blz == NULL) {
+	struct blz_context* ctx = calloc(1, sizeof(struct blz_context));
+	if (ctx == NULL) {
 		LOG_ERR("blz_connect: alloc failed");
 		return NULL;
 	}
 
 	/* Connect to the system bus */
-	int r = sd_bus_open_system(&blz->bus);
+	int r = sd_bus_open_system(&ctx->bus);
 	if (r < 0) {
 		LOG_ERR("Failed to connect to system bus: %s", strerror(-r));
+		free(ctx);
 		return NULL;
 	}
-	return blz;
+
+	snprintf(ctx->path, DBUS_PATH_MAX_LEN, "/org/bluez/%s", dev);
+
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	r = sd_bus_set_property(ctx->bus,
+			"org.bluez", ctx->path,
+			"org.bluez.Adapter1",
+			"Powered",
+			 &error, "b", 1);
+	if (r < 0) {
+		LOG_ERR("BLZ failed to power on: %s", strerror(-r));
+		sd_bus_unref(ctx->bus);
+		free(ctx);
+		return NULL;
+	}
+
+	return ctx;
 }
 
 void blz_fini(blz* ctx)
@@ -39,13 +64,31 @@ void blz_fini(blz* ctx)
 	free(ctx);
 }
 
-bool blz_connect(blz* ctx, const char* mac)
+blz_dev* blz_connect(blz* ctx, const uint8_t* mac)
 {
+	int r;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 
-	int r = sd_bus_call_method(ctx->bus,
-			"org.bluez",
-			"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2",
+	struct blz_dev* dev = calloc(1, sizeof(struct blz_dev));
+	if (dev == NULL) {
+		LOG_ERR("blz_dev: alloc failed");
+		return NULL;
+	}
+
+	dev->ctx = ctx;
+
+	r = snprintf(dev->path, DBUS_PATH_MAX_LEN,
+			 "%s/dev_%02X_%02X_%02X_%02X_%02X_%02X",
+			ctx->path, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	if (r < 0) {
+		free(dev);
+		return NULL;
+	}
+
+	LOG_INF("dev %s", dev->path);
+
+	r = sd_bus_call_method(ctx->bus,
+			"org.bluez", dev->path,
 			"org.bluez.Device1",
 			"Connect",
 			&error, NULL, "");
@@ -55,26 +98,46 @@ bool blz_connect(blz* ctx, const char* mac)
 
 	sd_bus_error_free(&error);
 
-	char** uuids;
-	r = sd_bus_get_property_strv(ctx->bus,
-			"org.bluez",
-			"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2",
-			"org.bluez.Device1",
-			"UUIDs", &error, &uuids);
+	if (r < 0) {
+		free(dev);
+		return NULL;
+	}
 
-	for (int i = 0; uuids[i] != NULL; i++)
-		LOG_INF("UUID %s", uuids[i]);
-
-	return r < 0 ? false : true;
+	return dev;
 }
 
-void blz_disconnect(blz* ctx)
+void blz_get_services(blz_dev* dev)
 {
+	char** uuids;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 
-	int r = sd_bus_call_method(ctx->bus,
+	int r = sd_bus_get_property_strv(dev->ctx->bus,
 			"org.bluez",
-			"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2",
+			dev->path,
+			"org.bluez.Device1",
+			"UUIDs",
+			&error, &uuids);
+
+	if (r < 0)
+		LOG_ERR("couldnt get services: %s", error.message);
+
+	for (int i = 0; uuids[i] != NULL; i++) {
+		LOG_INF("UUID %s", uuids[i]);
+		free(uuids[i]);
+	}
+
+	sd_bus_error_free(&error);
+}
+
+void blz_disconnect(blz_dev* dev)
+{
+	if (!dev)
+		return;
+
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+
+	int r = sd_bus_call_method(dev->ctx->bus,
+			"org.bluez", dev->path,
 			"org.bluez.Device1",
 			"Disconnect",
 			&error, NULL, "");

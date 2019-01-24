@@ -3,17 +3,19 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct blz_context blz;
+typedef struct blz_dev blz_dev;
 typedef struct blz_char blz_char;
 
 typedef void (*blz_notify_handler_t)(const char* data, size_t len, blz_char* ch);
 
-blz* blz_init(void);
+blz* blz_init(const char* dev);
 void blz_fini(blz* ctx);
 
-bool blz_connect(blz* ctx, const char* mac);
-void blz_disconnect(blz* ctx);
+blz_dev* blz_connect(blz* ctx, const uint8_t* mac);
+void blz_disconnect(blz_dev* dev);
 
 bool blz_resolve_services(blz* ctx);
 blz_char* blz_get_char_from_uuid(blz* ctx, const char* uuid);
