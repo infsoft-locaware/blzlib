@@ -20,7 +20,8 @@ struct blz_dev {
 };
 
 struct blz_char {
-	struct blz_context*	conn;
+	struct blz_context*	ctx;
+	struct blz_dev*		dev;
 	blz_notify_handler_t	notify_cb;
 };
 
@@ -341,7 +342,8 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 		LOG_ERR("blz_char: alloc failed");
 		return NULL;
 	}
-	ch->conn = dev->ctx;
+	ch->ctx = dev->ctx;
+	ch->dev = dev;
 
 	find_char(dev, ch, uuid);
 
@@ -355,7 +357,7 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len)
 	sd_bus_message* m;
 	int r;
 
-	r = sd_bus_message_new_method_call(ch->conn->bus, &m,
+	r = sd_bus_message_new_method_call(ch->ctx->bus, &m,
 		"org.bluez",
 		"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000c",
 		"org.bluez.GattCharacteristic1",
@@ -382,7 +384,7 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len)
 		goto error;
 	}
 
-	r = sd_bus_call(ch->conn->bus, m, 0, &error, &reply);
+	r = sd_bus_call(ch->ctx->bus, m, 0, &error, &reply);
 	if (r < 0) {
 		LOG_ERR("BLZ failed to write: %s", error.message);
 		goto error;
@@ -461,13 +463,13 @@ bool blz_char_notify(blz_char* ch, blz_notify_handler_t cb)
 	
 	ch->notify_cb = cb;
 
-	sd_bus_match_signal(ch->conn->bus, &slot, "org.bluez",
+	sd_bus_match_signal(ch->ctx->bus, &slot, "org.bluez",
 		"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000e",
 		"org.freedesktop.DBus.Properties",
 		"PropertiesChanged",
 		blz_signal_cb, ch);
 
-	r = sd_bus_call_method(ch->conn->bus,
+	r = sd_bus_call_method(ch->ctx->bus,
 		"org.bluez",
 		"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000e",
 		"org.bluez.GattCharacteristic1",
@@ -486,7 +488,7 @@ int blz_char_write_fd_acquire(blz_char* ch)
 	int r;
 	int fd;
 
-	r = sd_bus_call_method(ch->conn->bus,
+	r = sd_bus_call_method(ch->ctx->bus,
 		"org.bluez",
 		"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000c",
 		"org.bluez.GattCharacteristic1",
