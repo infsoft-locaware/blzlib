@@ -148,68 +148,183 @@ void blz_disconnect(blz_dev* dev)
 	sd_bus_error_free(&error);
 }
 
+static int parse_msg_char_properties(sd_bus_message* m)
+{
+	int r;
+	const char* str;
+
+	/* array of dict entries */
+	r = sd_bus_message_enter_container(m, 'a', "{sv}");
+	if (r < 0) {
+		LOG_ERR("parse msg 1");
+		return r;
+	}
+
+	/* next dict */
+	while (r = sd_bus_message_enter_container(m, 'e', "sv") > 0)
+	{
+		/* property name */
+		r = sd_bus_message_read_basic(m, 's', &str);
+		if (r < 0) {
+			LOG_ERR("parse msg 2");
+			return r;
+		}
+		//LOG_INF("Name %s", opath);
+
+		if (strcmp(str, "UUID") == 0) {
+			r = sd_bus_message_enter_container(m, 'v', "s");
+			if (r < 0) {
+				LOG_ERR("parse msg 3");
+				return r;
+			}
+			r = sd_bus_message_read_basic(m, 's', &str);
+			if (r < 0) {
+				LOG_ERR("parse msg 4");
+				return r;
+			}
+
+			LOG_INF("UUID %s", str);
+
+			r = sd_bus_message_exit_container(m);
+			if (r < 0) {
+				LOG_ERR("parse msg 5");
+				return r;
+			}
+		} else {
+			r = sd_bus_message_skip(m, "v");
+			if (r < 0) {
+				LOG_ERR("parse msg 6");
+				return r;
+			}
+		}
+
+		r = sd_bus_message_exit_container(m);
+		if (r < 0) {
+			LOG_ERR("parse msg 7");
+			return r;
+		}
+	}
+
+	if (r < 0) {
+		LOG_ERR("parse msg 8");
+		return r;
+	}
+
+	r = sd_bus_message_exit_container(m);
+	if (r < 0) {
+		LOG_ERR("parse msg 9");
+		return r;
+	}
+}
+
+
+int parse_msg_interfaces(sd_bus_message* m)
+{
+	int r;
+	const char* str;
+
+	/* array of interface names with array of properties */
+	r = sd_bus_message_enter_container(m, 'a', "{sa{sv}}");
+	if (r < 0) {
+		LOG_ERR("parse intf 1");
+		return r;
+	}
+
+	/* next entry */
+	while (r = sd_bus_message_enter_container(m, 'e', "sa{sv}") > 0)
+	{
+		r = sd_bus_message_read_basic(m, 's', &str);
+		if (r < 0) {
+			LOG_ERR("parse intf 2");
+			return r;
+		}
+
+		if (strcmp(str, "org.bluez.GattCharacteristic1") == 0) {
+			parse_msg_char_properties(m);
+		}
+		else {
+			r = sd_bus_message_skip(m, "a{sv}");
+			if (r < 0) {
+				LOG_ERR("parse intf 3");
+				return r;
+			}
+		}
+
+		r = sd_bus_message_exit_container(m);
+		if (r < 0) {
+			LOG_ERR("parse intf 4");
+			return r;
+		}
+	}
+
+	if (r < 0) {
+		LOG_ERR("parse intf 5");
+		return r;
+	}
+
+	r = sd_bus_message_exit_container(m);
+        if (r < 0) {
+		LOG_ERR("parse intf 6");
+		return r;
+	}
+}
+
 bool blz_resolve_services(blz* conn)
 {
+	const char* opath;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
+
 	int r = sd_bus_call_method(conn->bus,
-			"org.bluez",
-			"/",
+			"org.bluez", "/",
 			"org.freedesktop.DBus.ObjectManager",
 			"GetManagedObjects",
 			&error, &reply, "");
 	if (r < 0) {
-		LOG_ERR("Failed to issue method call: %s", error.message);
+		LOG_ERR("Failed to get managed objects: %s", error.message);
 		goto error;
 	}
 
-	LOG_INF("SIG %s", sd_bus_message_get_signature(reply, false));
-
-	/* Parse the response message */
+	/* array of objects */
 	r = sd_bus_message_enter_container(reply, 'a', "{oa{sa{sv}}}");
         if (r < 0) {
-		LOG_ERR("0");
+		LOG_ERR("parse obj 1");
                 goto error;
 	}
 
-	const char* opath;
-	for (;;) {
-		r = sd_bus_message_enter_container(reply, 'e', "oa{sa{sv}}");
-		if (r < 0) {
-			LOG_ERR("1");
-			goto error;
-		}
-		if (r == 0) { /* Reached end of array */
-			LOG_ERR("done");
-                        break;
-		}
+	while (r = sd_bus_message_enter_container(reply, 'e', "oa{sa{sv}}") > 0)
+	{
 		r = sd_bus_message_read_basic(reply, 'o', &opath);
 		if (r < 0) {
-			LOG_ERR("2");
-			goto error;
-		}
-		LOG_INF("O %s", opath);
-		
-		r = sd_bus_message_skip(reply, "a{sa{sv}}");
-		if (r < 0) {
-			LOG_ERR("3");
+			LOG_ERR("parse obj 2");
 			goto error;
 		}
 
+		LOG_INF("O %s", opath);
+		parse_msg_interfaces(reply);
+
 		r = sd_bus_message_exit_container(reply);
                 if (r < 0) {
-			LOG_ERR("4");
+			LOG_ERR("parse obj 3");
 			goto error;
 		}
 	}
 
+	if (r < 0) {
+		LOG_ERR("parse obj 4");
+		goto error;
+	}
+
 	r = sd_bus_message_exit_container(reply);
-	return true;
+	if (r < 0) {
+		LOG_ERR("parse obj 5");
+		goto error;
+	}
 
 error:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	return false;
+	return r < 0 ? false : true;
 }
 
 blz_char* blz_get_char_from_uuid(blz* conn, const char* uuid)
