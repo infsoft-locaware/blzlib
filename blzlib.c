@@ -8,6 +8,7 @@
 #include "blzlib.h"
 
 #define DBUS_PATH_MAX_LEN	255
+#define UUID_STR_LEN		37
 
 struct blz_context {
 	sd_bus*			bus;
@@ -22,6 +23,8 @@ struct blz_dev {
 struct blz_char {
 	struct blz_context*	ctx;
 	struct blz_dev*		dev;
+	char			path[DBUS_PATH_MAX_LEN];
+	char			uuid[UUID_STR_LEN];
 	blz_notify_handler_t	notify_cb;
 };
 
@@ -149,7 +152,7 @@ void blz_disconnect(blz_dev* dev)
 	sd_bus_error_free(&error);
 }
 
-static int parse_msg_char_properties(sd_bus_message* m)
+static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_char* ch)
 {
 	int r;
 	const char* str;
@@ -184,7 +187,11 @@ static int parse_msg_char_properties(sd_bus_message* m)
 				return r;
 			}
 
-			LOG_INF("UUID %s", str);
+			//LOG_INF("UUID %s", str);
+			if (strcmp(str, ch->uuid) == 0) {
+				strncpy(ch->path, opath, DBUS_PATH_MAX_LEN);
+				return 1000;
+			}
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {
@@ -219,7 +226,7 @@ static int parse_msg_char_properties(sd_bus_message* m)
 }
 
 
-int parse_msg_interfaces(sd_bus_message* m)
+int parse_msg_interfaces(sd_bus_message* m, const char* opath, blz_char* ch)
 {
 	int r;
 	const char* str;
@@ -241,7 +248,9 @@ int parse_msg_interfaces(sd_bus_message* m)
 		}
 
 		if (strcmp(str, "org.bluez.GattCharacteristic1") == 0) {
-			parse_msg_char_properties(m);
+			r = parse_msg_char_properties(m, opath, ch);
+			if (r == 1000) // found
+				return r;
 		}
 		else {
 			r = sd_bus_message_skip(m, "a{sv}");
@@ -274,13 +283,13 @@ bool blz_resolve_services(blz* conn)
 {
 }
 
-static bool find_char(blz_dev* dev, blz_char* ch, const char* uuid)
+static bool find_char(blz_char* ch)
 {
 	const char* opath;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
 
-	int r = sd_bus_call_method(dev->ctx->bus,
+	int r = sd_bus_call_method(ch->ctx->bus,
 			"org.bluez", "/",
 			"org.freedesktop.DBus.ObjectManager",
 			"GetManagedObjects",
@@ -306,7 +315,19 @@ static bool find_char(blz_dev* dev, blz_char* ch, const char* uuid)
 		}
 
 		LOG_INF("O %s", opath);
-		parse_msg_interfaces(reply);
+
+		/* check if it is below our own device path, otherwise skip */
+		if (strncmp(opath, ch->dev->path, strlen(ch->dev->path)) == 0) {
+			r = parse_msg_interfaces(reply, opath, ch);
+			if (r == 1000)
+				goto error; // exit
+		} else {
+			r = sd_bus_message_skip(reply, "a{sa{sv}}");
+			if (r < 0) {
+				LOG_ERR("parse obj 4");
+				return r;
+			}
+		}
 
 		r = sd_bus_message_exit_container(reply);
                 if (r < 0) {
@@ -329,7 +350,7 @@ static bool find_char(blz_dev* dev, blz_char* ch, const char* uuid)
 error:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	return r < 0 ? false : true;
+	return r == 1000 ? true : false;
 }
 
 blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
@@ -344,9 +365,15 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 	}
 	ch->ctx = dev->ctx;
 	ch->dev = dev;
+	strncpy(ch->uuid, uuid, UUID_STR_LEN);
 
-	find_char(dev, ch, uuid);
-
+	bool b = find_char(ch);
+	if (!b) {
+		LOG_ERR("Couldn't find characteristic with UUID %s", uuid);
+		free(ch);
+		return NULL;
+	}
+	LOG_INF("Found characteristic with UUID %s", uuid);
 	return ch;
 }
 
@@ -358,8 +385,7 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len)
 	int r;
 
 	r = sd_bus_message_new_method_call(ch->ctx->bus, &m,
-		"org.bluez",
-		"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000c",
+		"org.bluez", ch->path,
 		"org.bluez.GattCharacteristic1",
 		"WriteValue");
 	if (r < 0) {
@@ -463,15 +489,14 @@ bool blz_char_notify(blz_char* ch, blz_notify_handler_t cb)
 	
 	ch->notify_cb = cb;
 
-	sd_bus_match_signal(ch->ctx->bus, &slot, "org.bluez",
-		"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000e",
+	sd_bus_match_signal(ch->ctx->bus, &slot,
+		"org.bluez", ch->path,
 		"org.freedesktop.DBus.Properties",
 		"PropertiesChanged",
 		blz_signal_cb, ch);
 
 	r = sd_bus_call_method(ch->ctx->bus,
-		"org.bluez",
-		"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000e",
+		"org.bluez", ch->path,
 		"org.bluez.GattCharacteristic1",
 		"StartNotify",
 		&error, &reply, "");
@@ -489,8 +514,7 @@ int blz_char_write_fd_acquire(blz_char* ch)
 	int fd;
 
 	r = sd_bus_call_method(ch->ctx->bus,
-		"org.bluez",
-		"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000c",
+		"org.bluez", ch->path,
 		"org.bluez.GattCharacteristic1",
 		"AcquireWrite",
 		&error, &reply,

@@ -17,7 +17,6 @@ void blz_fini(blz* ctx);
 blz_dev* blz_connect(blz* ctx, const uint8_t* mac);
 void blz_disconnect(blz_dev* dev);
 
-//bool blz_resolve_services(blz* ctx);
 blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid);
 
 bool blz_char_write(blz_char* ch, const char* data, size_t len);
