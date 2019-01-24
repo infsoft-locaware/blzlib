@@ -11,6 +11,8 @@
 
 #include "blzlib.h"
 
+#define UUID_WRITE	"6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+
 static bool terminate = false;
 
 void notify_handler(const char* data, size_t len, blz_char* ch)
@@ -44,8 +46,7 @@ int main(int argc, char** argv)
 	if (!dev)
 		goto exit;
 
-	blz_resolve_services(blz);
-	blz_char* ch = blz_get_char_from_uuid(blz, "");
+	blz_char* ch = blz_get_char_from_uuid(dev, UUID_WRITE);
 
 	char* send = "Hallo";
 	blz_char_write(ch, send, 5);

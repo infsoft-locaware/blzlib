@@ -271,11 +271,15 @@ int parse_msg_interfaces(sd_bus_message* m)
 
 bool blz_resolve_services(blz* conn)
 {
+}
+
+static bool find_char(blz_dev* dev, blz_char* ch, const char* uuid)
+{
 	const char* opath;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
 
-	int r = sd_bus_call_method(conn->bus,
+	int r = sd_bus_call_method(dev->ctx->bus,
 			"org.bluez", "/",
 			"org.freedesktop.DBus.ObjectManager",
 			"GetManagedObjects",
@@ -327,25 +331,20 @@ error:
 	return r < 0 ? false : true;
 }
 
-blz_char* blz_get_char_from_uuid(blz* conn, const char* uuid)
+blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 {
 	char* uuidr;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
-
-	int r = sd_bus_get_property_string(conn->bus,
-			"org.bluez",
-			"/org/bluez/hci0/dev_CF_D6_E8_4B_A0_D2/service000b/char000c",
-			"org.bluez.GattCharacteristic1",
-			"UUID", &error, &uuidr);
-
-	LOG_INF("UUID %s", uuidr);
 
 	struct blz_char* ch = calloc(1, sizeof(struct blz_char));
 	if (ch == NULL) {
 		LOG_ERR("blz_char: alloc failed");
 		return NULL;
 	}
-	ch->conn = conn;
+	ch->conn = dev->ctx;
+
+	find_char(dev, ch, uuid);
+
 	return ch;
 }
 
