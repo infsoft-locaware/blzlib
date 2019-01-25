@@ -60,6 +60,53 @@ void blz_fini(blz* ctx)
 	free(ctx);
 }
 
+bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
+{
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	int r;
+
+	ctx->scan_cb = cb;
+
+	//TODO list all already known devices
+	//TODO connect signal
+
+	r = sd_bus_call_method(ctx->bus,
+		"org.bluez", ctx->path,
+		"org.bluez.Adapter1",
+		"StartDiscovery",
+		&error, NULL, "");
+
+	if (r < 0) {
+		LOG_ERR("BLZ failed to scan: %s", error.message);
+	}
+
+	sd_bus_error_free(&error);
+	return r >= 0;
+}
+
+bool blz_scan_stop(blz* ctx)
+{
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	int r;
+
+	ctx->scan_cb = NULL;
+
+	//TODO disconnect signal
+
+	r = sd_bus_call_method(ctx->bus,
+		"org.bluez", ctx->path,
+		"org.bluez.Adapter1",
+		"StopDiscovery",
+		&error, NULL, "");
+
+	if (r < 0) {
+		LOG_ERR("BLZ failed to stop scan: %s", error.message);
+	}
+
+	sd_bus_error_free(&error);
+	return r >= 0;
+}
+
 blz_dev* blz_connect(blz* ctx, const uint8_t* mac)
 {
 	int r;

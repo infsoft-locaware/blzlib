@@ -7,6 +7,8 @@
 struct blz_context {
 	sd_bus*			bus;
 	char			path[DBUS_PATH_MAX_LEN];
+	blz_scan_handler_t	scan_cb;
+	sd_bus_slot*		scan_slot;
 };
 
 struct blz_dev {

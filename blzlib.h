@@ -10,9 +10,13 @@ typedef struct blz_dev blz_dev;
 typedef struct blz_char blz_char;
 
 typedef void (*blz_notify_handler_t)(const char* data, size_t len, blz_char* ch);
+typedef void (*blz_scan_handler_t)(const char* name, const uint8_t* mac);
 
 blz* blz_init(const char* dev);
 void blz_fini(blz* ctx);
+
+bool blz_scan_start(blz* ctx, blz_scan_handler_t cb);
+bool blz_scan_stop(blz* ctx);
 
 blz_dev* blz_connect(blz* ctx, const uint8_t* mac);
 void blz_disconnect(blz_dev* dev);
