@@ -1,11 +1,6 @@
-#include <string.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdbool.h>
 #include <signal.h>
-
-#include <systemd/sd-bus.h>
 
 #include <uwifi/log.h>
 
@@ -44,7 +39,6 @@ int main(int argc, char** argv)
 	LOG_INF("Connecting...");
 	//uint8_t mac[] = { 0xCF, 0xD6, 0xE8, 0x4B, 0xA0, 0xD2 };
 	uint8_t mac[] = { 0xC7, 0x2D, 0x19, 0x62, 0x10, 0xC1 };
-	//uint8_t mac[] = { 0xF2, 0x86, 0xB3, 0xCC, 0xB7, 0xE4 }; // EInk for read
 
 	blz_dev* dev = blz_connect(blz, mac);
 	if (!dev)
@@ -52,12 +46,6 @@ int main(int argc, char** argv)
 
 	blz_char* wch = blz_get_char_from_uuid(dev, UUID_WRITE);
 	blz_char* rch = blz_get_char_from_uuid(dev, UUID_READ);
-
-	// Read device vendor
-	//blz_char* rch = blz_get_char_from_uuid(dev, "00002a29-0000-1000-8000-00805f9b34fb");
-	//char buf[20];
-	//int len = blz_char_read(rch, buf, 20);
-	//LOG_INF("R '%.*s' %d", len, buf, len);
 
 	char* send = "Hallo";
 	blz_char_write(wch, send, 5);
