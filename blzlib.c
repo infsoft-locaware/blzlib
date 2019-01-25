@@ -409,15 +409,14 @@ int blz_char_write_fd_acquire(blz_char* ch)
 	r = sd_bus_message_read(reply, "h", &fd);
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to get write fd");
+	} else {
+		r = dup(fd);
 	}
 
 exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	if (r < 0)
-		return r;
-	else
-		return dup(fd);
+	return r;
 }
 
 void blz_loop(blz* conn)
