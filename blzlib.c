@@ -181,6 +181,7 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 		LOG_ERR("blz_char: alloc failed");
 		return NULL;
 	}
+
 	ch->ctx = dev->ctx;
 	ch->dev = dev;
 	strncpy(ch->uuid, uuid, UUID_STR_LEN);
@@ -192,6 +193,7 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 		free(ch);
 		return NULL;
 	}
+
 	LOG_INF("Found characteristic with UUID %s", uuid);
 	return ch;
 }
@@ -207,6 +209,7 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len)
 		"org.bluez", ch->path,
 		"org.bluez.GattCharacteristic1",
 		"WriteValue");
+
 	if (r < 0) {
 		LOG_ERR("BLZ write failed to create message");
 		goto exit;
@@ -343,6 +346,7 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
 		"org.freedesktop.DBus.Properties",
 		"PropertiesChanged",
 		blz_signal_cb, ch);
+
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to notify");
 		goto exit;
