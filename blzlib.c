@@ -424,11 +424,17 @@ void blz_loop(blz* conn)
 	sd_bus_message *m = NULL;
 	int r = sd_bus_process(conn->bus, &m);
 	if (r < 0) {
-		//error handling
+		LOG_ERR("BLZ loop process error: %s", strerror(-r));
+		return;
+	}
+
+	/* sd_bus_wait() should be called only if sd_bus_process() returned 0 */
+	if (r > 0) {
+		return;
 	}
 
 	r = sd_bus_wait(conn->bus, (uint64_t)-1);
 	if (r < 0) {
-		//error handling
+		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
 }
