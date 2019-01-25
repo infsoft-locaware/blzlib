@@ -375,8 +375,8 @@ int blz_char_write_fd_acquire(blz_char* ch)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
+	int fd = -1;
 	int r;
-	int fd;
 
 	r = sd_bus_call_method(ch->ctx->bus,
 		"org.bluez", ch->path,
@@ -387,18 +387,21 @@ int blz_char_write_fd_acquire(blz_char* ch)
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed acquire write: %s", error.message);
-		goto error;
+		goto exit;
 	}
 
 	r = sd_bus_message_read(reply, "h", &fd);
-	if (r < 0)
-		LOG_ERR("fd");
+	if (r < 0) {
+		LOG_ERR("BLZ Failed to get write fd");
+	}
 
-	return dup(fd);
-error:
+exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	return -1;
+	if (r < 0)
+		return r;
+	else
+		return dup(fd);
 }
 
 void blz_loop(blz* conn)
