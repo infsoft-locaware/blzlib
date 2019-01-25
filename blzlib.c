@@ -368,6 +368,8 @@ bool blz_char_notify_stop(blz_char* ch)
 
 	ch->notify_slot = sd_bus_slot_unref(ch->notify_slot);
 
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(reply);
 	return r >= 0;
 }
 
