@@ -229,8 +229,39 @@ error:
 	return false;
 }
 
-bool blz_char_read(blz_char* ch, const char* data, size_t len)
+int blz_char_read(blz_char* ch, char* data, size_t len)
 {
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	sd_bus_message* reply = NULL;
+	const void* ptr;
+	size_t rlen = -1;
+	int r;
+
+	r = sd_bus_call_method(ch->ctx->bus,
+		"org.bluez", ch->path,
+		"org.bluez.GattCharacteristic1",
+		"ReadValue",
+		&error, &reply, "a{sv}", 0);
+
+	if (r < 0) {
+		LOG_ERR("BLZ failed to read: %s", error.message);
+		goto exit;
+	}
+
+	r = sd_bus_message_read_array(reply, 'y', &ptr, &rlen);
+	if (r < 0) {
+		LOG_ERR("BLZ failed to read result: %s", error.message);
+		goto exit;
+	}
+
+	if (rlen > 0) {
+		memcpy(data, ptr, rlen < len ? rlen : len);
+	}
+
+exit:
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(reply);
+	return rlen;
 }
 
 static int blz_signal_cb(sd_bus_message* m, void* user, sd_bus_error* err)
