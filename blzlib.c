@@ -122,15 +122,17 @@ void blz_disconnect(blz_dev* dev)
 		return;
 
 	sd_bus_error error = SD_BUS_ERROR_NULL;
+	int r;
 
-	int r = sd_bus_call_method(dev->ctx->bus,
-			"org.bluez", dev->path,
-			"org.bluez.Device1",
-			"Disconnect",
-			&error, NULL, "");
+	r = sd_bus_call_method(dev->ctx->bus,
+		"org.bluez", dev->path,
+		"org.bluez.Device1",
+		"Disconnect",
+		&error, NULL, "");
 
-	if (r < 0)
-		LOG_ERR("couldnt disconnect: %s", error.message);
+	if (r < 0) {
+		LOG_ERR("BLZ failed to disconnect: %s", error.message);
+	}
 
 	sd_bus_error_free(&error);
 }
