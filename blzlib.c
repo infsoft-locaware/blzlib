@@ -185,11 +185,11 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 bool blz_char_write(blz_char* ch, const char* data, size_t len)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
+	sd_bus_message* call = NULL;
 	sd_bus_message* reply = NULL;
-	sd_bus_message* m = NULL;
 	int r;
 
-	r = sd_bus_message_new_method_call(ch->ctx->bus, &m,
+	r = sd_bus_message_new_method_call(ch->ctx->bus, &call,
 		"org.bluez", ch->path,
 		"org.bluez.GattCharacteristic1",
 		"WriteValue");
@@ -198,25 +198,25 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len)
 		goto exit;
 	}
 
-	r = sd_bus_message_append_array(m, 'y', data, len);
+	r = sd_bus_message_append_array(call, 'y', data, len);
 	if (r < 0) {
 		LOG_ERR("BLZ write failed to create message");
 		goto exit;
 	}
 
-	r = sd_bus_message_open_container(m, 'a', "{sv}");
+	r = sd_bus_message_open_container(call, 'a', "{sv}");
 	if (r < 0) {
 		LOG_ERR("BLZ write failed to create message");
 		goto exit;
 	}
 
-	r = sd_bus_message_close_container(m);
+	r = sd_bus_message_close_container(call);
 	if (r < 0) {
 		LOG_ERR("BLZ write failed to create message");
 		goto exit;
 	}
 
-	r = sd_bus_call(ch->ctx->bus, m, 0, &error, &reply);
+	r = sd_bus_call(ch->ctx->bus, call, 0, &error, &reply);
 	if (r < 0) {
 		LOG_ERR("BLZ failed to write: %s", error.message);
 		goto exit;
@@ -224,7 +224,7 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len)
 
 exit:
 	sd_bus_error_free(&error);
-	sd_bus_message_unref(m);
+	sd_bus_message_unref(call);
 	sd_bus_message_unref(reply);
 	return r >= 0;
 }
