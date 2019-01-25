@@ -61,32 +61,31 @@ blz_dev* blz_connect(blz* ctx, const uint8_t* mac)
 
 	dev->ctx = ctx;
 
+	/* create device path based on MAC address */
 	r = snprintf(dev->path, DBUS_PATH_MAX_LEN,
-			 "%s/dev_%02X_%02X_%02X_%02X_%02X_%02X",
+			"%s/dev_%02X_%02X_%02X_%02X_%02X_%02X",
 			ctx->path, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-	if (r < 0) {
+
+	if (r < 0 || r >= DBUS_PATH_MAX_LEN) {
+		LOG_ERR("BLZ connect failed to construct device path");
 		free(dev);
 		return NULL;
 	}
-
-	LOG_INF("dev %s", dev->path);
 
 	r = sd_bus_call_method(ctx->bus,
-			"org.bluez", dev->path,
-			"org.bluez.Device1",
-			"Connect",
-			&error, NULL, "");
-
-	if (r < 0)
-		LOG_ERR("couldnt connect: %s", error.message);
-
-	sd_bus_error_free(&error);
+		"org.bluez", dev->path,
+		"org.bluez.Device1",
+		"Connect",
+		&error, NULL, "");
 
 	if (r < 0) {
+		LOG_ERR("BLZ failed to connect: %s", error.message);
+		sd_bus_error_free(&error);
 		free(dev);
 		return NULL;
 	}
 
+	sd_bus_error_free(&error);
 	return dev;
 }
 
