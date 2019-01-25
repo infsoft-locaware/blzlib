@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 	char* send = "Hallo";
 	blz_char_write(wch, send, 5);
 
-	blz_char_notify(rch, notify_handler);
+	blz_char_notify_start(rch, notify_handler);
 
 	fd = blz_char_write_fd_acquire(wch);
 	write(fd, "test", 4);
@@ -72,6 +72,7 @@ int main(int argc, char** argv)
 	}
 
 exit:
+	blz_char_notify_stop(rch);
 	blz_disconnect(dev);
 	blz_fini(blz);
 	close(fd);

@@ -316,20 +316,23 @@ static int blz_signal_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	ch->notify_cb(v, len, ch);
 }
 
-bool blz_char_notify(blz_char* ch, blz_notify_handler_t cb)
+bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
-	sd_bus_slot *slot;
 	int r;
-	
+
 	ch->notify_cb = cb;
 
-	sd_bus_match_signal(ch->ctx->bus, &slot,
+	r = sd_bus_match_signal(ch->ctx->bus, &ch->notify_slot,
 		"org.bluez", ch->path,
 		"org.freedesktop.DBus.Properties",
 		"PropertiesChanged",
 		blz_signal_cb, ch);
+	if (r < 0) {
+		LOG_ERR("BLZ Failed to notify");
+		goto exit;
+	}
 
 	r = sd_bus_call_method(ch->ctx->bus,
 		"org.bluez", ch->path,
@@ -340,6 +343,32 @@ bool blz_char_notify(blz_char* ch, blz_notify_handler_t cb)
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to start notify: %s", error.message);
 	}
+
+exit:
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(reply);
+	return r >= 0;
+}
+
+bool blz_char_notify_stop(blz_char* ch)
+{
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	sd_bus_message* reply = NULL;
+	int r;
+
+	r = sd_bus_call_method(ch->ctx->bus,
+		"org.bluez", ch->path,
+		"org.bluez.GattCharacteristic1",
+		"StopNotify",
+		&error, &reply, "");
+
+	if (r < 0) {
+		LOG_ERR("BLZ Failed to stop notify: %s", error.message);
+	}
+
+	ch->notify_slot = sd_bus_slot_unref(ch->notify_slot);
+
+	return r >= 0;
 }
 
 int blz_char_write_fd_acquire(blz_char* ch)

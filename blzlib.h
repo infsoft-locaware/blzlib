@@ -21,7 +21,8 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid);
 
 bool blz_char_write(blz_char* ch, const char* data, size_t len);
 int blz_char_read(blz_char* ch, char* data, size_t len);
-bool blz_char_notify(blz_char* ch, blz_notify_handler_t cb);
+bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb);
+bool blz_char_notify_stop(blz_char* ch);
 /** need to close(fd) to release */
 int blz_char_write_fd_acquire(blz_char* ch);
 

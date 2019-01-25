@@ -20,6 +20,7 @@ struct blz_char {
 	char			path[DBUS_PATH_MAX_LEN];
 	char			uuid[UUID_STR_LEN];
 	blz_notify_handler_t	notify_cb;
+	sd_bus_slot*		notify_slot;
 };
 
 int parse_msg_objects(sd_bus_message* m, blz_char* ch);
