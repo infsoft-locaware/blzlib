@@ -10,35 +10,47 @@
 
 blz* blz_init(const char* dev)
 {
-	struct blz_context* ctx = calloc(1, sizeof(struct blz_context));
+	int r;
+	struct blz_context* ctx;
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+
+	ctx = calloc(1, sizeof(struct blz_context));
 	if (ctx == NULL) {
-		LOG_ERR("blz_connect: alloc failed");
+		LOG_ERR("blz_context: alloc failed");
+		return NULL;
+	}
+
+	r = snprintf(ctx->path, DBUS_PATH_MAX_LEN, "/org/bluez/%s", dev);
+	if (r < 0 || r >= DBUS_PATH_MAX_LEN) {
+		LOG_ERR("BLZ init failed to construct path");
+		free(ctx);
 		return NULL;
 	}
 
 	/* Connect to the system bus */
-	int r = sd_bus_open_system(&ctx->bus);
+	r = sd_bus_open_system(&ctx->bus);
 	if (r < 0) {
 		LOG_ERR("Failed to connect to system bus: %s", strerror(-r));
 		free(ctx);
 		return NULL;
 	}
 
-	snprintf(ctx->path, DBUS_PATH_MAX_LEN, "/org/bluez/%s", dev);
-
-	sd_bus_error error = SD_BUS_ERROR_NULL;
+	/* power on if necessary */
 	r = sd_bus_set_property(ctx->bus,
-			"org.bluez", ctx->path,
-			"org.bluez.Adapter1",
-			"Powered",
-			 &error, "b", 1);
+		"org.bluez", ctx->path,
+		"org.bluez.Adapter1",
+		"Powered",
+		 &error, "b", 1);
+
 	if (r < 0) {
-		LOG_ERR("BLZ failed to power on: %s", strerror(-r));
+		LOG_ERR("BLZ failed to power on: %s", error.message);
+		sd_bus_error_free(&error);
 		sd_bus_unref(ctx->bus);
 		free(ctx);
 		return NULL;
 	}
 
+	sd_bus_error_free(&error);
 	return ctx;
 }
 
