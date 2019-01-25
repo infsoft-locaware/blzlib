@@ -285,52 +285,72 @@ static int blz_signal_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 {
 	int r;
 	char* str;
-	const void* v;
+	const void* ptr;
 	size_t len;
 	struct blz_char* ch = user;
 
-	if (ch->notify_cb == NULL) {
-		LOG_ERR("no cb");
-		return 0;
+	if (ch == NULL || ch->notify_cb == NULL) {
+		LOG_ERR("BLZ signal no callback");
+		return -1;
 	}
 
+	/* interface */
 	r = sd_bus_message_read_basic(m, 's', &str);
-	if (r < 0)
-		LOG_INF("err1");
-	
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* ignore all other interfaces */
 	if (strcmp(str, "org.bluez.GattCharacteristic1") != 0) {
-		LOG_INF("SIGNAL intf %s ignored", str);
+		LOG_INF("BLZ signal interface %s ignored", str);
 		return 0;
 	}
 
+	/* array of dict */
 	r = sd_bus_message_enter_container(m, 'a', "{sv}");
-	if (r < 0)
-		LOG_INF("err2");
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
 
+	/* enter first element */
 	r = sd_bus_message_enter_container(m, 'e', "sv");
-	if (r < 0)
-		LOG_INF("err3");
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
 
+	/* property name */
 	r = sd_bus_message_read_basic(m, 's', &str);
-	if (r < 0)
-		LOG_INF("err4");
-	
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* ignore all except Value */
 	if (strcmp(str, "Value") != 0) {
-		LOG_INF("SIGNAL Property %s ignored", str);
+		LOG_INF("BLZ signal property %s ignored", str);
 		return 0;
 	}
 
+	/* enter variant */
 	r = sd_bus_message_enter_container(m, 'v', "ay");
-	if (r < 0)
-		LOG_INF("err41");
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
 
-	r = sd_bus_message_read_array(m, 'y', &v, &len);
-	if (r < 0)
-		LOG_INF("err5");
+	/* get byte array */
+	r = sd_bus_message_read_array(m, 'y', &ptr, &len);
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
 
-	const char* buf = v;
-	LOG_INF("SIGNAL '%.*s'", (int)len-1, buf);
-	ch->notify_cb(v, len, ch);
+
+	ch->notify_cb(ptr, len, ch);
+	return 0;
 }
 
 bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
@@ -441,4 +461,9 @@ void blz_loop(blz* conn)
 	if (r < 0) {
 		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
+}
+
+int blz_get_fd(blz* ctx)
+{
+	return sd_bus_get_fd(ctx->bus);
 }
