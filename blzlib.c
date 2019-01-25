@@ -135,24 +135,26 @@ void blz_disconnect(blz_dev* dev)
 	sd_bus_error_free(&error);
 }
 
-static bool find_char(blz_char* ch)
+static bool find_char_by_uuid(blz_char* ch)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
+	int r;
 
-	int r = sd_bus_call_method(ch->ctx->bus,
-			"org.bluez", "/",
-			"org.freedesktop.DBus.ObjectManager",
-			"GetManagedObjects",
-			&error, &reply, "");
+	r = sd_bus_call_method(ch->ctx->bus,
+		"org.bluez", "/",
+		"org.freedesktop.DBus.ObjectManager",
+		"GetManagedObjects",
+		&error, &reply, "");
+
 	if (r < 0) {
 		LOG_ERR("Failed to get managed objects: %s", error.message);
-		goto error;
+		goto exit;
 	}
 
 	r = parse_msg_objects(reply, ch);
 
-error:
+exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
 	return r == 1000 ? true : false;
@@ -160,9 +162,7 @@ error:
 
 blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 {
-	char* uuidr;
-	sd_bus_error error = SD_BUS_ERROR_NULL;
-
+	/* alloc char structure for use later */
 	struct blz_char* ch = calloc(1, sizeof(struct blz_char));
 	if (ch == NULL) {
 		LOG_ERR("blz_char: alloc failed");
@@ -172,7 +172,8 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 	ch->dev = dev;
 	strncpy(ch->uuid, uuid, UUID_STR_LEN);
 
-	bool b = find_char(ch);
+	/* this will try to find the uuid in char, fill required info */
+	bool b = find_char_by_uuid(ch);
 	if (!b) {
 		LOG_ERR("Couldn't find characteristic with UUID %s", uuid);
 		free(ch);
