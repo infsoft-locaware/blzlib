@@ -5,6 +5,7 @@
 #include <uwifi/log.h>
 
 #include "blzlib.h"
+#include "blzlib_util.h"
 
 #define UUID_WRITE	"6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 #define UUID_READ	"6e400003-b5a3-f393-e0a9-e50e24dcca9e"
@@ -38,7 +39,7 @@ int main(int argc, char** argv)
 
 	LOG_INF("Connecting...");
 	//uint8_t mac[] = { 0xCF, 0xD6, 0xE8, 0x4B, 0xA0, 0xD2 };
-	uint8_t mac[] = { 0xC7, 0x2D, 0x19, 0x62, 0x10, 0xC1 };
+	uint8_t* mac = blz_string_to_mac_s("C7:2D:19:62:10:C1");
 
 	blz_dev* dev = blz_connect(blz, mac);
 	if (!dev)

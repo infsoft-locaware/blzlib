@@ -4,6 +4,7 @@ project(sdgatt VERSION 0.1.0)
 add_library(blz SHARED
 	blzlib.c
 	blzlib_msgs.c
+	blzlib_util.c
 )
 
 add_executable(nordic_uart
