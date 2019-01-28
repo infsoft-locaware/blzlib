@@ -71,6 +71,11 @@ static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* use
 
 int main(int argc, char** argv)
 {
+	blz* blz = NULL;
+	blz_dev* dev = NULL;
+	blz_char* wch = NULL;
+	blz_char* rch = NULL;
+
 	if (argv[1] == NULL) {
 		LOG_ERR("Pass MAC address of device to connect to");
 		return EXIT_FAILURE;
@@ -80,22 +85,33 @@ int main(int argc, char** argv)
 
 	log_open("nordic_uart");
 
-	blz* blz = blz_init("hci0");
+	blz = blz_init("hci0");
+	if (!blz)
+		goto exit;
 
 	//CF:D6:E8:4B:A0:D2 or C7:2D:19:62:10:C1
 	uint8_t* mac = blz_string_to_mac_s(argv[1]);
 	LOG_INF("Connecting to " MAC_FMT " ...", MAC_PAR(mac));
-
-	blz_dev* dev = blz_connect(blz, mac);
+	dev = blz_connect(blz, mac);
 	if (!dev)
 		goto exit;
 
-	blz_char* wch = blz_get_char_from_uuid(dev, UUID_WRITE);
-	blz_char* rch = blz_get_char_from_uuid(dev, UUID_READ);
+	wch = blz_get_char_from_uuid(dev, UUID_WRITE);
+	rch = blz_get_char_from_uuid(dev, UUID_READ);
 
-	blz_char_notify_start(rch, notify_handler);
+	if (!wch || !rch) {
+		LOG_ERR("Nordic UART characteristics not found");
+		goto exit;
+	}
+
+	bool b = blz_char_notify_start(rch, notify_handler);
+	if (!b)
+		goto exit;
 
 	int wfd = blz_char_write_fd_acquire(wch);
+	if (wfd < 0)
+		goto exit;
+
 	write(wfd, "---Nordic UART client started---\r\n", 34);
 
 	/* set O_NONBLOCK on STDIN */
