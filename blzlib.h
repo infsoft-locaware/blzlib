@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <systemd/sd-bus.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct blz_context blz;
 typedef struct blz_dev blz_dev;
 typedef struct blz_char blz_char;
@@ -37,5 +41,9 @@ int blz_get_events(blz* ctx);
 uint64_t blz_get_timeout(blz* ctx);
 void blz_process(blz* ctx);
 sd_bus* blz_get_sdbus(blz* ctx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

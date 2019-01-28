@@ -4,6 +4,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* for use in printf-like functions */
 #ifndef MAC_FMT
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
@@ -27,5 +31,9 @@
 
 bool blz_string_to_mac(const char* str, uint8_t mac[6]);
 uint8_t* blz_string_to_mac_s(const char* str);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
