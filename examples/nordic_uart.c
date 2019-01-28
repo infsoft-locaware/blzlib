@@ -82,7 +82,6 @@ int main(int argc, char** argv)
 	}
 
 	signals_block();
-
 	log_open("nordic_uart");
 
 	blz = blz_init("hci0");

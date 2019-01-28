@@ -35,5 +35,11 @@ target_link_libraries(scan blz ${LIBSYSTEMD_LIBRARIES})
 
 set(CMAKE_C_FLAGS "-DDEBUG=1")
 
-install(TARGETS nordic_uart
-	RUNTIME DESTINATION sbin)
+install(FILES blzlib.h blzlib_util.h
+	DESTINATION include
+)
+
+install(TARGETS blz nordic_uart read_manuf_name
+	ARCHIVE DESTINATION lib
+	LIBRARY DESTINATION lib
+	RUNTIME DESTINATION bin)
