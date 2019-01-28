@@ -71,7 +71,10 @@ static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* use
 
 int main(int argc, char** argv)
 {
-	int wfd;
+	if (argv[1] == NULL) {
+		LOG_ERR("Pass MAC address of device to connect to");
+		return EXIT_FAILURE;
+	}
 
 	signals_block();
 
@@ -79,9 +82,9 @@ int main(int argc, char** argv)
 
 	blz* blz = blz_init("hci0");
 
-	LOG_INF("Connecting...");
-	//uint8_t mac[] = { 0xCF, 0xD6, 0xE8, 0x4B, 0xA0, 0xD2 };
-	uint8_t* mac = blz_string_to_mac_s("C7:2D:19:62:10:C1");
+	//CF:D6:E8:4B:A0:D2 or C7:2D:19:62:10:C1
+	uint8_t* mac = blz_string_to_mac_s(argv[1]);
+	LOG_INF("Connecting to " MAC_FMT " ...", MAC_PAR(mac));
 
 	blz_dev* dev = blz_connect(blz, mac);
 	if (!dev)
@@ -92,7 +95,7 @@ int main(int argc, char** argv)
 
 	blz_char_notify_start(rch, notify_handler);
 
-	wfd = blz_char_write_fd_acquire(wch);
+	int wfd = blz_char_write_fd_acquire(wch);
 	write(wfd, "---Nordic UART client started---\r\n", 34);
 
 	/* set O_NONBLOCK on STDIN */
