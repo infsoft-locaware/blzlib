@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#include <systemd/sd-event.h>
 
 #include <uwifi/log.h>
 
@@ -10,30 +14,68 @@
 #define UUID_WRITE	"6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 #define UUID_READ	"6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
-static bool terminate = false;
+static sd_event *event = NULL;
 
-void notify_handler(const char* data, size_t len, blz_char* ch)
+static void notify_handler(const char* data, size_t len, blz_char* ch)
 {
-	LOG_INF("RX: '%.*s' %zd", (int)len - 1, data, len);
+	LOG_INF("RX: '%.*s'", (int)len - 1, data);
 }
 
-static void signal_handler(__attribute__((unused)) int signo)
+static bool signals_block(void)
 {
-	terminate = true;
+	sigset_t sigmask_block;
+	/* Initialize bocked signals (all which we handle) */
+	if (sigemptyset(&sigmask_block)                       == -1 ||
+	    sigaddset(&sigmask_block, SIGINT)                 == -1 ||
+	    sigaddset(&sigmask_block, SIGTERM)                == -1) {
+		LOG_ERR("failed to initialize block signals");
+		return false;
+	}
+
+	/* block signals and get original mask */
+	if (sigprocmask(SIG_BLOCK, &sigmask_block, NULL) == -1) {
+		LOG_ERR("failed to block signals:");
+		return false;
+	}
+	return true;
+}
+
+static int signal_handler(sd_event_source *s,	const struct signalfd_siginfo *si, void *user)
+{
+	LOG_INF("Received signal, shutting down...");
+
+	/* detach sd-bus from event loop because we still need to use it later
+	 * to disconnect and finish */
+	sd_bus_detach_event(blz_get_sdbus(user));
+	sd_event_exit(event, 0);
+}
+
+static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* user)
+{
+	//blz_char* wch = user;
+	int* wfd = user;
+	char buffer[21];
+
+	int len = read(STDIN_FILENO, buffer, 20);
+	buffer[len] = '\r';
+
+	if (len < 0) {
+		LOG_ERR("Read error");
+		return -1;
+	}
+
+	//blz_char_write(wch, buffer, len);
+	write(*wfd, buffer, len + 1);
+	return 0;
 }
 
 int main(int argc, char** argv)
 {
-	int fd;
+	int wfd;
 
-	/* register the signal SIGINT handler */
-	struct sigaction act;
-	act.sa_handler = signal_handler;
-	act.sa_flags = 0;
-	sigemptyset(&act.sa_mask);
-	sigaction(SIGINT, &act, NULL);
+	signals_block();
 
-	log_open("sdgatt");
+	log_open("nordic_uart");
 
 	blz* blz = blz_init("hci0");
 
@@ -48,23 +90,30 @@ int main(int argc, char** argv)
 	blz_char* wch = blz_get_char_from_uuid(dev, UUID_WRITE);
 	blz_char* rch = blz_get_char_from_uuid(dev, UUID_READ);
 
-	char* send = "Hallo";
-	blz_char_write(wch, send, 5);
-
 	blz_char_notify_start(rch, notify_handler);
 
-	fd = blz_char_write_fd_acquire(wch);
-	write(fd, "test", 4);
+	wfd = blz_char_write_fd_acquire(wch);
+	write(wfd, "---Nordic UART client started---\r\n", 34);
 
-	while (!terminate) {
-		blz_loop(blz);
-	}
+	/* set O_NONBLOCK on STDIN */
+	int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+	fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+
+	/* Use SD Event loop */
+	sd_event_default(&event);
+        sd_event_add_signal(event, NULL, SIGTERM, signal_handler, blz);
+        sd_event_add_signal(event, NULL, SIGINT, signal_handler, blz);
+	sd_event_add_io(event, NULL, STDIN_FILENO,  EPOLLIN, stdin_handler, &wfd);
+	sd_bus_attach_event(blz_get_sdbus(blz), event, SD_EVENT_PRIORITY_NORMAL);
+
+	sd_event_loop(event);
 
 exit:
+	sd_event_unref(event);
 	blz_char_notify_stop(rch);
 	blz_disconnect(dev);
 	blz_fini(blz);
-	close(fd);
+	close(wfd);
 	log_close();
 
 	return EXIT_SUCCESS;

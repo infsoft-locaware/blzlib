@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <systemd/sd-bus.h>
 
 typedef struct blz_context blz;
 typedef struct blz_dev blz_dev;
@@ -32,5 +33,9 @@ int blz_char_write_fd_acquire(blz_char* ch);
 
 void blz_loop(blz* ctx);
 int blz_get_fd(blz* ctx);
+int blz_get_events(blz* ctx);
+uint64_t blz_get_timeout(blz* ctx);
+void blz_process(blz* ctx);
+sd_bus* blz_get_sdbus(blz* ctx);
 
 #endif
