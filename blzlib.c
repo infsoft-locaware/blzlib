@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <systemd/sd-bus.h>
 
 #include <uwifi/log.h>
@@ -56,6 +57,9 @@ blz* blz_init(const char* dev)
 
 void blz_fini(blz* ctx)
 {
+	if (ctx == NULL)
+		return;
+
 	sd_bus_unref(ctx->bus);
 	free(ctx);
 }
@@ -441,6 +445,9 @@ bool blz_char_notify_stop(blz_char* ch)
 	sd_bus_message* reply = NULL;
 	int r;
 
+	if (ch == NULL)
+		return false;
+
 	r = sd_bus_call_method(ch->ctx->bus,
 		"org.bluez", ch->path,
 		"org.bluez.GattCharacteristic1",
@@ -505,7 +512,7 @@ void blz_loop(blz* conn)
 	}
 
 	r = sd_bus_wait(conn->bus, (uint64_t)-1);
-	if (r < 0) {
+	if (r < 0 && -r != EINTR) {
 		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
 }
