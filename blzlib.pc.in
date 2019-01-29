@@ -8,4 +8,4 @@ Description: @CPACK_PACKAGE_DESCRIPTION_SUMMARY@
 Requires: libsystemd
 Version: @CPACK_PACKAGE_VERSION@
 Cflags: -I${includedir}
-Libs: -L${libdir} -lblz
+Libs: -L${libdir} -lblzlib

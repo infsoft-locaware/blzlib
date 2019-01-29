@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(sdgatt VERSION 0.1.0)
 
-add_library(blz SHARED
+add_library(blzlib SHARED
 	blzlib.c
 	blzlib_msgs.c
 	blzlib_util.c
@@ -36,7 +36,7 @@ install(FILES blzlib.h blzlib_util.h
 configure_file(blzlib.pc.in ${PROJECT_BINARY_DIR}/blzlib.pc @ONLY)
 install(FILES ${PROJECT_BINARY_DIR}/blzlib.pc DESTINATION lib/pkgconfig)
 
-install(TARGETS blz nordic_uart read_manuf_name
+install(TARGETS blzlib nordic_uart read_manuf_name
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION bin)
