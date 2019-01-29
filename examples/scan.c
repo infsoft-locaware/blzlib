@@ -1,9 +1,8 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include <uwifi/log.h>
-
 #include "blzlib.h"
+#include "blzlib_log.h"
 
 static bool terminate = false;
 
@@ -26,8 +25,6 @@ int main(int argc, char** argv)
 	sigemptyset(&act.sa_mask);
 	sigaction(SIGINT, &act, NULL);
 
-	log_open(NULL);
-
 	blz* blz = blz_init("hci0");
 
 	blz_scan_start(blz, scan_cb);
@@ -40,6 +37,5 @@ int main(int argc, char** argv)
 
 	blz_fini(blz);
 
-	log_close();
 	return EXIT_SUCCESS;
 }

@@ -5,22 +5,16 @@ add_library(blz SHARED
 	blzlib.c
 	blzlib_msgs.c
 	blzlib_util.c
-)
+	blzlib_log.c)
 
 add_executable(nordic_uart
-	examples/nordic_uart.c
-	examples/logging.c
-)
+	examples/nordic_uart.c)
 
 add_executable(read_manuf_name
-	examples/read_manuf_name.c
-	examples/logging.c
-)
+	examples/read_manuf_name.c)
 
 add_executable(scan
-	examples/scan.c
-	examples/logging.c
-)
+	examples/scan.c)
 
 find_package(PkgConfig REQUIRED)
 pkg_search_module(LIBSYSTEMD REQUIRED libsystemd)
@@ -38,6 +32,9 @@ set(CMAKE_C_FLAGS "-DDEBUG=1")
 install(FILES blzlib.h blzlib_util.h
 	DESTINATION include
 )
+
+configure_file(blzlib.pc.in ${PROJECT_BINARY_DIR}/blzlib.pc @ONLY)
+install(FILES ${PROJECT_BINARY_DIR}/blzlib.pc DESTINATION lib/pkgconfig)
 
 install(TARGETS blz nordic_uart read_manuf_name
 	ARCHIVE DESTINATION lib

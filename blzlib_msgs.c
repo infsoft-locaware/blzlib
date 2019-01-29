@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include <systemd/sd-bus.h>
 
-#include <uwifi/log.h>
-
 #include "blzlib.h"
 #include "blzlib_internal.h"
+#include "blzlib_log.h"
 
 static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_char* ch)
 {

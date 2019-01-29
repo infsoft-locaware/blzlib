@@ -18,3 +18,4 @@ uint8_t* blz_string_to_mac_s(const char* str)
 	blz_string_to_mac(str, mac);
 	return mac;
 }
+

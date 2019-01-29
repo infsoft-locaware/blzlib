@@ -6,10 +6,9 @@
 
 #include <systemd/sd-event.h>
 
-#include <uwifi/log.h>
-
 #include "blzlib.h"
 #include "blzlib_util.h"
+#include "blzlib_log.h"
 
 #define UUID_WRITE	"6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 #define UUID_READ	"6e400003-b5a3-f393-e0a9-e50e24dcca9e"
@@ -82,7 +81,6 @@ int main(int argc, char** argv)
 	}
 
 	signals_block();
-	log_open("nordic_uart");
 
 	blz = blz_init("hci0");
 	if (!blz)
@@ -132,7 +130,6 @@ exit:
 	blz_disconnect(dev);
 	blz_fini(blz);
 	close(wfd);
-	log_close();
 
 	return EXIT_SUCCESS;
 }

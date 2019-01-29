@@ -32,6 +32,7 @@ extern "C" {
 bool blz_string_to_mac(const char* str, uint8_t mac[6]);
 uint8_t* blz_string_to_mac_s(const char* str);
 
+
 #ifdef __cplusplus
 }
 #endif

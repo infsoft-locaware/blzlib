@@ -1,9 +1,8 @@
 #include <stdlib.h>
 
-#include <uwifi/log.h>
-
 #include "blzlib.h"
 #include "blzlib_util.h"
+#include "blzlib_log.h"
 
 int main(int argc, char** argv)
 {
@@ -17,8 +16,6 @@ int main(int argc, char** argv)
 	}
 
 	char buf[20];
-
-	log_open(NULL);
 
 	blz = blz_init("hci0");
 	if (!blz)
@@ -43,7 +40,6 @@ int main(int argc, char** argv)
 exit:
 	blz_disconnect(dev);
 	blz_fini(blz);
-	log_close();
 
 	return EXIT_SUCCESS;
 }

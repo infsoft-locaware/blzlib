@@ -4,10 +4,9 @@
 #include <errno.h>
 #include <systemd/sd-bus.h>
 
-#include <uwifi/log.h>
-
 #include "blzlib.h"
 #include "blzlib_internal.h"
+#include "blzlib_log.h"
 
 blz* blz_init(const char* dev)
 {
