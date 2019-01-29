@@ -19,7 +19,7 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 	}
 
 	/* next dict */
-	while (r = sd_bus_message_enter_container(m, 'e', "sv") > 0)
+	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0)
 	{
 		/* property name */
 		r = sd_bus_message_read_basic(m, 's', &str);
@@ -77,6 +77,7 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 		LOG_ERR("parse msg 9");
 		return r;
 	}
+	return r;
 }
 
 static int parse_msg_interfaces(sd_bus_message* m, const char* opath, blz_char* ch)
@@ -92,7 +93,7 @@ static int parse_msg_interfaces(sd_bus_message* m, const char* opath, blz_char* 
 	}
 
 	/* next entry */
-	while (r = sd_bus_message_enter_container(m, 'e', "sa{sv}") > 0)
+	while ((r = sd_bus_message_enter_container(m, 'e', "sa{sv}")) > 0)
 	{
 		r = sd_bus_message_read_basic(m, 's', &str);
 		if (r < 0) {
@@ -130,6 +131,7 @@ static int parse_msg_interfaces(sd_bus_message* m, const char* opath, blz_char* 
 		LOG_ERR("parse intf 6");
 		return r;
 	}
+	return r;
 }
 
 int parse_msg_objects(sd_bus_message* m, blz_char* ch)
@@ -143,7 +145,7 @@ int parse_msg_objects(sd_bus_message* m, blz_char* ch)
                 return r;
 	}
 
-	while (r = sd_bus_message_enter_container(m, 'e', "oa{sa{sv}}") > 0)
+	while ((r = sd_bus_message_enter_container(m, 'e', "oa{sa{sv}}")) > 0)
 	{
 		r = sd_bus_message_read_basic(m, 'o', &opath);
 		if (r < 0) {

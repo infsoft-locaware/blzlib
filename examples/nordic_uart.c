@@ -47,6 +47,7 @@ static int signal_handler(sd_event_source *s,	const struct signalfd_siginfo *si,
 	 * to disconnect and finish */
 	sd_bus_detach_event(blz_get_sdbus(user));
 	sd_event_exit(event, 0);
+	return 0;
 }
 
 static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* user)
