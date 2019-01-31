@@ -36,10 +36,6 @@ bool blz_char_notify_stop(blz_char* ch);
 int blz_char_write_fd_acquire(blz_char* ch);
 
 void blz_loop(blz* ctx);
-int blz_get_fd(blz* ctx);
-int blz_get_events(blz* ctx);
-uint64_t blz_get_timeout(blz* ctx);
-void blz_process(blz* ctx);
 
 #ifdef __cplusplus
 }

@@ -515,34 +515,3 @@ void blz_loop(blz* conn)
 		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
 }
-
-int blz_get_fd(blz* ctx)
-{
-	return sd_bus_get_fd(ctx->bus);
-}
-
-int blz_get_events(blz* ctx)
-{
-	return sd_bus_get_events(ctx->bus);
-}
-
-uint64_t blz_get_timeout(blz* ctx)
-{
-	uint64_t usec;
-	int r = sd_bus_get_timeout(ctx->bus, &usec);
-	if (r < 0)
-		LOG_ERR("ERR %d", r);
-	else
-		LOG_INF("to %ld", usec);
-	return usec;
-}
-
-void blz_process(blz* ctx)
-{
-	sd_bus_message *m = NULL;
-	int r = sd_bus_process(ctx->bus, &m);
-	if (r < 0) {
-		LOG_ERR("BLZ loop process error: %s", strerror(-r));
-		return;
-	}
-}
