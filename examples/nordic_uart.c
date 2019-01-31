@@ -83,6 +83,7 @@ int main(int argc, char** argv)
 	blz_dev* dev = NULL;
 	blz_char* wch = NULL;
 	blz_char* rch = NULL;
+	sd_bus* sdbus = NULL;
 
 	if (argv[1] == NULL) {
 		LOG_ERR("Pass MAC address of device to connect to");
@@ -126,7 +127,6 @@ int main(int argc, char** argv)
 	fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 
 	/* get default dbus system connection */
-	sd_bus* sdbus;
 	sd_bus_default_system(&sdbus);
 
 	/* Use SD Event loop */
