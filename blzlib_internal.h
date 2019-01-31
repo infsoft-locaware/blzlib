@@ -14,6 +14,7 @@ struct blz_context {
 struct blz_dev {
 	struct blz_context*	ctx;
 	char			path[DBUS_PATH_MAX_LEN];
+	bool			connected;
 };
 
 struct blz_char {
@@ -31,5 +32,6 @@ int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 int parse_msg_one_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
 int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz* ctx);
 int parse_msg_notify(sd_bus_message* m, const void** ptr, size_t* len);
+int parse_msg_connect(sd_bus_message* m, blz_dev* dev);
 
 #endif

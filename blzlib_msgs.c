@@ -382,3 +382,75 @@ int parse_msg_notify(sd_bus_message* m, const void** ptr, size_t* len)
 	}
 	return r;
 }
+
+int parse_msg_connect(sd_bus_message* m, blz_dev* dev)
+{
+	int r;
+	char* str;
+
+	/* interface */
+	r = sd_bus_message_read_basic(m, 's', &str);
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* ignore all other interfaces */
+	if (strcmp(str, "org.bluez.Device1") != 0) {
+		LOG_INF("BLZ signal interface %s ignored", str);
+		return 0;
+	}
+
+	/* array of dict */
+	r = sd_bus_message_enter_container(m, 'a', "{sv}");
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0) {
+		/* property name */
+		r = sd_bus_message_read_basic(m, 's', &str);
+		if (r < 0) {
+			LOG_ERR("BLZ signal msg read error");
+			return -2;
+		}
+
+		if (strcmp(str, "ServicesResolved") == 0) {
+			r = sd_bus_message_enter_container(m, 'v', "b");
+			if (r < 0) {
+				LOG_ERR("BLZ msg read error");
+				return -2;
+			}
+
+			sd_bus_message_read_basic(m, 'b', &dev->connected);
+
+			r = sd_bus_message_exit_container(m);
+			if (r < 0) {
+				LOG_ERR("parse obj ra3");
+				return r;
+			}
+		}
+		else {
+			LOG_INF("BLZ conn property %s ignored", str);
+			r = sd_bus_message_skip(m, "v");
+			if (r < 0) {
+				LOG_ERR("parse obj 4");
+				return r;
+			}
+		}
+
+		r = sd_bus_message_exit_container(m);
+		if (r < 0) {
+			LOG_ERR("parse obj 3");
+			return r;
+		}
+	}
+
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	return r;
+}

@@ -160,6 +160,19 @@ bool blz_scan_stop(blz* ctx)
 	return r >= 0;
 }
 
+static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
+{
+	struct blz_dev* dev = user;
+
+	if (dev == NULL) {
+		LOG_ERR("BLZ conn no dev");
+		return -1;
+	}
+
+	parse_msg_connect(m, dev);
+	return 0;
+}
+
 blz_dev* blz_connect(blz* ctx, const char* macstr)
 {
 	int r;
@@ -173,6 +186,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 	}
 
 	dev->ctx = ctx;
+	dev->connected = false;
 
 	blz_string_to_mac(macstr, mac);
 
@@ -183,6 +197,18 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 
 	if (r < 0 || r >= DBUS_PATH_MAX_LEN) {
 		LOG_ERR("BLZ connect failed to construct device path");
+		free(dev);
+		return NULL;
+	}
+
+	r = sd_bus_match_signal(ctx->bus, &ctx->scan_slot,
+		"org.bluez", dev->path,
+		"org.freedesktop.DBus.Properties",
+		"PropertiesChanged",
+		blz_connect_cb, dev);
+
+	if (r < 0) {
+		LOG_ERR("BLZ Failed to add conn signal");
 		free(dev);
 		return NULL;
 	}
@@ -198,6 +224,12 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 		sd_bus_error_free(&error);
 		free(dev);
 		return NULL;
+	}
+
+	/* wait until ServicesResolved property changed to true for this device */
+	// TODO: timeout
+	while (!dev->connected) {
+		blz_loop(ctx);
 	}
 
 	sd_bus_error_free(&error);
