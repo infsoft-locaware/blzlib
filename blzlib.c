@@ -495,10 +495,10 @@ exit:
 	return r;
 }
 
-void blz_loop(blz* conn)
+void blz_loop(blz* ctx)
 {
 	sd_bus_message *m = NULL;
-	int r = sd_bus_process(conn->bus, &m);
+	int r = sd_bus_process(ctx->bus, &m);
 	if (r < 0) {
 		LOG_ERR("BLZ loop process error: %s", strerror(-r));
 		return;
@@ -509,7 +509,7 @@ void blz_loop(blz* conn)
 		return;
 	}
 
-	r = sd_bus_wait(conn->bus, (uint64_t)-1);
+	r = sd_bus_wait(ctx->bus, (uint64_t)-1);
 	if (r < 0 && -r != EINTR) {
 		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
