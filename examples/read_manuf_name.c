@@ -1,7 +1,6 @@
 #include <stdlib.h>
 
 #include "blzlib.h"
-#include "blzlib_util.h"
 #include "blzlib_log.h"
 
 int main(int argc, char** argv)
@@ -22,10 +21,8 @@ int main(int argc, char** argv)
 		goto exit;
 
 	// F2:86:B3:CC:B7:E4
-	uint8_t* mac = blz_string_to_mac_s(argv[1]);
-	LOG_INF("Connecting to " MAC_FMT " ...", MAC_PAR(mac));
-
-	dev = blz_connect(blz, mac);
+	LOG_INF("Connecting to %s...", argv[1]);
+	dev = blz_connect(blz, argv[1]);
 	if (!dev)
 		goto exit;
 

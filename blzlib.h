@@ -23,7 +23,7 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_start(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_stop(blz* ctx);
 
-blz_dev* blz_connect(blz* ctx, const uint8_t* mac);
+blz_dev* blz_connect(blz* ctx, const char* macstr);
 void blz_disconnect(blz_dev* dev);
 
 blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid);

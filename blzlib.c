@@ -6,6 +6,7 @@
 
 #include "blzlib.h"
 #include "blzlib_internal.h"
+#include "blzlib_util.h"
 #include "blzlib_log.h"
 
 blz* blz_init(const char* dev)
@@ -159,9 +160,10 @@ bool blz_scan_stop(blz* ctx)
 	return r >= 0;
 }
 
-blz_dev* blz_connect(blz* ctx, const uint8_t* mac)
+blz_dev* blz_connect(blz* ctx, const char* macstr)
 {
 	int r;
+	uint8_t mac[6];
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 
 	struct blz_dev* dev = calloc(1, sizeof(struct blz_dev));
@@ -171,6 +173,8 @@ blz_dev* blz_connect(blz* ctx, const uint8_t* mac)
 	}
 
 	dev->ctx = ctx;
+
+	blz_string_to_mac(macstr, mac);
 
 	/* create device path based on MAC address */
 	r = snprintf(dev->path, DBUS_PATH_MAX_LEN,

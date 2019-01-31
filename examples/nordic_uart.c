@@ -9,7 +9,6 @@
 #include <systemd/sd-bus.h>
 
 #include "blzlib.h"
-#include "blzlib_util.h"
 #include "blzlib_log.h"
 
 #define UUID_WRITE	"6e400002-b5a3-f393-e0a9-e50e24dcca9e"
@@ -99,9 +98,8 @@ int main(int argc, char** argv)
 		goto exit;
 
 	//CF:D6:E8:4B:A0:D2 or C7:2D:19:62:10:C1
-	uint8_t* mac = blz_string_to_mac_s(argv[1]);
-	LOG_INF("Connecting to " MAC_FMT " ...", MAC_PAR(mac));
-	dev = blz_connect(blz, mac);
+	LOG_INF("Connecting to %s...", argv[1]);
+	dev = blz_connect(blz, argv[1]);
 	if (!dev)
 		goto exit;
 
