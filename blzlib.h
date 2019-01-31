@@ -40,7 +40,6 @@ int blz_get_fd(blz* ctx);
 int blz_get_events(blz* ctx);
 uint64_t blz_get_timeout(blz* ctx);
 void blz_process(blz* ctx);
-sd_bus* blz_get_sdbus(blz* ctx);
 
 #ifdef __cplusplus
 }

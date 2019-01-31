@@ -28,7 +28,7 @@ blz* blz_init(const char* dev)
 	}
 
 	/* Connect to the system bus */
-	r = sd_bus_open_system(&ctx->bus);
+	r = sd_bus_default_system(&ctx->bus);
 	if (r < 0) {
 		LOG_ERR("Failed to connect to system bus: %s", strerror(-r));
 		free(ctx);
@@ -545,10 +545,4 @@ void blz_process(blz* ctx)
 		LOG_ERR("BLZ loop process error: %s", strerror(-r));
 		return;
 	}
-}
-
-sd_bus* blz_get_sdbus(blz* ctx)
-{
-	// new in systemd 240: sd_bus_set_close_on_exit(ctx->bus, 0);
-	return ctx->bus;
 }

@@ -19,13 +19,16 @@ add_executable(scan
 find_package(PkgConfig REQUIRED)
 pkg_search_module(LIBSYSTEMD REQUIRED libsystemd)
 
+# Add the build directory for the examples to link the currently built library
+link_directories(${PROJECT_BINARY_DIR})
+
 target_include_directories(nordic_uart PRIVATE .)
 target_include_directories(read_manuf_name PRIVATE .)
 target_include_directories(scan PRIVATE .)
 
-target_link_libraries(nordic_uart blz ${LIBSYSTEMD_LIBRARIES})
-target_link_libraries(read_manuf_name blz ${LIBSYSTEMD_LIBRARIES})
-target_link_libraries(scan blz ${LIBSYSTEMD_LIBRARIES})
+target_link_libraries(nordic_uart blzlib ${LIBSYSTEMD_LIBRARIES})
+target_link_libraries(read_manuf_name blzlib ${LIBSYSTEMD_LIBRARIES})
+target_link_libraries(scan blzlib ${LIBSYSTEMD_LIBRARIES})
 
 set(CMAKE_C_FLAGS "-DDEBUG=1")
 

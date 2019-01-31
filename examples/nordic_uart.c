@@ -39,13 +39,13 @@ static bool signals_block(void)
 	return true;
 }
 
-static int signal_handler(sd_event_source *s,	const struct signalfd_siginfo *si, void *user)
+static int signal_handler(sd_event_source *s, const struct signalfd_siginfo *si, void *user)
 {
 	LOG_INF("Received signal, shutting down...");
 
 	/* detach sd-bus from event loop because we still need to use it later
 	 * to disconnect and finish */
-	sd_bus_detach_event(blz_get_sdbus(user));
+	sd_bus_detach_event(user);
 	sd_event_exit(event, 0);
 	return 0;
 }
@@ -116,17 +116,22 @@ int main(int argc, char** argv)
 	int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
 	fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 
+	/* get default dbus system connection */
+	sd_bus* sdbus;
+	sd_bus_default_system(&sdbus);
+
 	/* Use SD Event loop */
 	sd_event_default(&event);
-        sd_event_add_signal(event, NULL, SIGTERM, signal_handler, blz);
-        sd_event_add_signal(event, NULL, SIGINT, signal_handler, blz);
+        sd_event_add_signal(event, NULL, SIGTERM, signal_handler, sdbus);
+        sd_event_add_signal(event, NULL, SIGINT, signal_handler, sdbus);
 	sd_event_add_io(event, NULL, STDIN_FILENO,  EPOLLIN, stdin_handler, &wfd);
-	sd_bus_attach_event(blz_get_sdbus(blz), event, SD_EVENT_PRIORITY_NORMAL);
+	sd_bus_attach_event(sdbus, event, SD_EVENT_PRIORITY_NORMAL);
 
 	sd_event_loop(event);
 
 exit:
 	sd_event_unref(event);
+	sd_bus_unref(sdbus);
 	blz_char_notify_stop(rch);
 	blz_disconnect(dev);
 	blz_fini(blz);
