@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <systemd/sd-bus.h>
 
 #ifdef __cplusplus
 extern "C" {

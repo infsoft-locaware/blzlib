@@ -5,6 +5,7 @@
 #include <fcntl.h>
 
 #include <systemd/sd-event.h>
+#include <systemd/sd-bus.h>
 
 #include "blzlib.h"
 #include "blzlib_util.h"

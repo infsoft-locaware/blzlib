@@ -1,6 +1,8 @@
 #ifndef BLZ_LOG_H
 #define BLZ_LOG_H
 
+#include <stdarg.h>
+
 /* these conincide with syslog levels for convenience */
 enum loglevel { LL_CRIT = 2, LL_ERR, LL_WARN, LL_NOTICE, LL_INFO, LL_DEBUG };
 
