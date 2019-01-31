@@ -142,10 +142,6 @@ bool blz_scan_stop(blz* ctx)
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int r;
 
-	ctx->scan_cb = NULL;
-
-	//TODO disconnect signal
-
 	r = sd_bus_call_method(ctx->bus,
 		"org.bluez", ctx->path,
 		"org.bluez.Adapter1",
@@ -155,6 +151,9 @@ bool blz_scan_stop(blz* ctx)
 	if (r < 0) {
 		LOG_ERR("BLZ failed to stop scan: %s", error.message);
 	}
+
+	ctx->scan_slot = sd_bus_slot_unref(ctx->scan_slot);
+	ctx->scan_cb = NULL;
 
 	sd_bus_error_free(&error);
 	return r >= 0;
@@ -457,6 +456,7 @@ bool blz_char_notify_stop(blz_char* ch)
 	}
 
 	ch->notify_slot = sd_bus_slot_unref(ch->notify_slot);
+	ch->notify_cb = NULL;
 
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
