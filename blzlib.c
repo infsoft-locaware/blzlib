@@ -82,7 +82,7 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb)
 		goto exit;
 	}
 
-	r = parse_msg_objects_dev(reply, ctx);
+	r = parse_msg_objects(reply, ctx->path, OBJ_DEVICE, ctx);
 
 exit:
 	sd_bus_error_free(&error);
@@ -93,9 +93,6 @@ exit:
 static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 {
 	int r;
-	char* str;
-	const void* ptr;
-	size_t len;
 	blz* ctx = user;
 
 	if (ctx == NULL || ctx->scan_cb == NULL) {
@@ -103,54 +100,8 @@ static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 		return -1;
 	}
 
-	/* interface */
-	r = sd_bus_message_read_basic(m, 'o', &str);
-	if (r < 0) {
-		LOG_ERR("BLZ signal msg read error");
-		return -2;
-	}
-
-	LOG_INF("path %s", str);
-
-	/* array of dict */
-	r = sd_bus_message_enter_container(m, 'a', "{sa{sv}}");
-	if (r < 0) {
-		LOG_ERR("BLZ signal msg read error");
-		return -2;
-	}
-
-	/* next dict */
-	while ((r = sd_bus_message_enter_container(m, 'e', "sa{sv}")) > 0)
-	{
-		/* interface name */
-		r = sd_bus_message_read_basic(m, 's', &str);
-		if (r < 0) {
-			LOG_ERR("BLZ signal msg read error");
-			return -2;
-		}
-
-		LOG_INF("intf %s", str);
-	
-		if (strcmp(str, "org.bluez.Device1") == 0) {
-			parse_msg_device_properties(m, NULL, ctx);
-		}
-		else {
-			r = sd_bus_message_skip(m, "a{sv}");
-			if (r < 0) {
-				LOG_ERR("parse msg 6");
-				return r;
-			}
-		}
-
-		r = sd_bus_message_exit_container(m);
-		if (r < 0) {
-			LOG_ERR("parse msg 7");
-			return r;
-		}
-	}
-
-	
-	return 0;
+	r = parse_msg_one_object(m, ctx->path, OBJ_DEVICE, ctx);
+	return r;
 }
 
 bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
@@ -314,7 +265,7 @@ static bool find_char_by_uuid(blz_char* ch)
 		goto exit;
 	}
 
-	r = parse_msg_objects(reply, ch);
+	r = parse_msg_objects(reply, ch->dev->path, OBJ_CHAR, ch);
 
 exit:
 	sd_bus_error_free(&error);

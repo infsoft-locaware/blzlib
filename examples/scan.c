@@ -9,9 +9,9 @@ static bool terminate = false;
 void scan_cb(const char* mac, const char* name, char** uuids)
 {
 	LOG_INF("%s: %s", mac, name);
+
 	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
 		LOG_INF("\tUUID %s", uuids[i]);
-		free(uuids[i]);
 	}
 }
 
@@ -31,7 +31,10 @@ int main(int argc, char** argv)
 
 	blz* blz = blz_init("hci0");
 
-	//blz_known_devices(blz, scan_cb);
+	LOG_INF("Known...");
+	blz_known_devices(blz, scan_cb);
+
+	LOG_INF("Scanning...");
 	blz_scan_start(blz, scan_cb);
 
 	while (!terminate) {

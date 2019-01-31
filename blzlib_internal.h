@@ -25,8 +25,10 @@ struct blz_char {
 	sd_bus_slot*		notify_slot;
 };
 
-int parse_msg_objects(sd_bus_message* m, blz_char* ch);
-int parse_msg_objects_dev(sd_bus_message* m, blz* ctx);
+enum e_obj { OBJ_CHAR, OBJ_DEVICE };
+
+int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
+int parse_msg_one_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
 int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz* ctx);
 
 #endif
