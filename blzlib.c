@@ -63,6 +63,96 @@ void blz_fini(blz* ctx)
 	free(ctx);
 }
 
+bool blz_known_devices(blz* ctx, blz_scan_handler_t cb)
+{
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	sd_bus_message* reply = NULL;
+	int r;
+
+	ctx->scan_cb = cb;
+
+	r = sd_bus_call_method(ctx->bus,
+		"org.bluez", "/",
+		"org.freedesktop.DBus.ObjectManager",
+		"GetManagedObjects",
+		&error, &reply, "");
+
+	if (r < 0) {
+		LOG_ERR("Failed to get managed objects: %s", error.message);
+		goto exit;
+	}
+
+	r = parse_msg_objects_dev(reply, ctx);
+
+exit:
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(reply);
+	return r >= 0;
+}
+
+static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
+{
+	int r;
+	char* str;
+	const void* ptr;
+	size_t len;
+	blz* ctx = user;
+
+	if (ctx == NULL || ctx->scan_cb == NULL) {
+		LOG_ERR("BLZ scan no callback");
+		return -1;
+	}
+
+	/* interface */
+	r = sd_bus_message_read_basic(m, 'o', &str);
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	LOG_INF("path %s", str);
+
+	/* array of dict */
+	r = sd_bus_message_enter_container(m, 'a', "{sa{sv}}");
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* next dict */
+	while ((r = sd_bus_message_enter_container(m, 'e', "sa{sv}")) > 0)
+	{
+		/* interface name */
+		r = sd_bus_message_read_basic(m, 's', &str);
+		if (r < 0) {
+			LOG_ERR("BLZ signal msg read error");
+			return -2;
+		}
+
+		LOG_INF("intf %s", str);
+	
+		if (strcmp(str, "org.bluez.Device1") == 0) {
+			parse_msg_device_properties(m, NULL, ctx);
+		}
+		else {
+			r = sd_bus_message_skip(m, "a{sv}");
+			if (r < 0) {
+				LOG_ERR("parse msg 6");
+				return r;
+			}
+		}
+
+		r = sd_bus_message_exit_container(m);
+		if (r < 0) {
+			LOG_ERR("parse msg 7");
+			return r;
+		}
+	}
+
+	
+	return 0;
+}
+
 bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
@@ -70,8 +160,16 @@ bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
 
 	ctx->scan_cb = cb;
 
-	//TODO list all already known devices
-	//TODO connect signal
+	r = sd_bus_match_signal(ctx->bus, &ctx->scan_slot,
+		"org.bluez", "/",
+		"org.freedesktop.DBus.ObjectManager",
+		"InterfacesAdded",
+		blz_intf_cb, ctx);
+
+	if (r < 0) {
+		LOG_ERR("BLZ Failed to notify");
+		goto exit;
+	}
 
 	r = sd_bus_call_method(ctx->bus,
 		"org.bluez", ctx->path,
@@ -83,6 +181,7 @@ bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
 		LOG_ERR("BLZ failed to scan: %s", error.message);
 	}
 
+exit:
 	sd_bus_error_free(&error);
 	return r >= 0;
 }

@@ -22,3 +22,7 @@ executable('nordic_uart',
 executable('read_manuf_name',
 	'examples/read_manuf_name.c',
 	link_with: blzlib)
+
+executable('scan',
+	'examples/scan.c',
+	link_with: blzlib)

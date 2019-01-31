@@ -6,9 +6,13 @@
 
 static bool terminate = false;
 
-void scan_cb(const char* name, const uint8_t* mac)
+void scan_cb(const char* mac, const char* name, char** uuids)
 {
-	LOG_INF("scan");
+	LOG_INF("%s: %s", mac, name);
+	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
+		LOG_INF("\tUUID %s", uuids[i]);
+		free(uuids[i]);
+	}
 }
 
 static void signal_handler(__attribute__((unused)) int signo)
@@ -27,6 +31,7 @@ int main(int argc, char** argv)
 
 	blz* blz = blz_init("hci0");
 
+	//blz_known_devices(blz, scan_cb);
 	blz_scan_start(blz, scan_cb);
 
 	while (!terminate) {

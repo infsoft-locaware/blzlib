@@ -26,5 +26,7 @@ struct blz_char {
 };
 
 int parse_msg_objects(sd_bus_message* m, blz_char* ch);
+int parse_msg_objects_dev(sd_bus_message* m, blz* ctx);
+int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz* ctx);
 
 #endif
