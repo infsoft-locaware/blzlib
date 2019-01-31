@@ -322,3 +322,63 @@ int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 	return r;
 }
 
+int parse_msg_notify(sd_bus_message* m, const void** ptr, size_t* len)
+{
+	int r;
+	char* str;
+
+	/* interface */
+	r = sd_bus_message_read_basic(m, 's', &str);
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* ignore all other interfaces */
+	if (strcmp(str, "org.bluez.GattCharacteristic1") != 0) {
+		LOG_INF("BLZ signal interface %s ignored", str);
+		return 0;
+	}
+
+	/* array of dict */
+	r = sd_bus_message_enter_container(m, 'a', "{sv}");
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* enter first element */
+	r = sd_bus_message_enter_container(m, 'e', "sv");
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* property name */
+	r = sd_bus_message_read_basic(m, 's', &str);
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* ignore all except Value */
+	if (strcmp(str, "Value") != 0) {
+		LOG_INF("BLZ signal property %s ignored", str);
+		return 0;
+	}
+
+	/* enter variant */
+	r = sd_bus_message_enter_container(m, 'v', "ay");
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+
+	/* get byte array */
+	r = sd_bus_message_read_array(m, 'y', ptr, len);
+	if (r < 0) {
+		LOG_ERR("BLZ signal msg read error");
+		return -2;
+	}
+	return r;
+}

@@ -30,5 +30,6 @@ enum e_obj { OBJ_CHAR, OBJ_DEVICE };
 int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
 int parse_msg_one_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
 int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz* ctx);
+int parse_msg_notify(sd_bus_message* m, const void** ptr, size_t* len);
 
 #endif
