@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -70,6 +71,13 @@ static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* use
 	return 0;
 }
 
+static void log_handler(enum loglevel ll, const char *fmt, va_list ap)
+{
+	printf("blz: ");
+	vprintf(fmt, ap);
+	printf("\n");
+}
+
 int main(int argc, char** argv)
 {
 	blz* blz = NULL;
@@ -83,6 +91,8 @@ int main(int argc, char** argv)
 	}
 
 	signals_block();
+
+	blz_set_log_handler(log_handler);
 
 	blz = blz_init("hci0");
 	if (!blz)
