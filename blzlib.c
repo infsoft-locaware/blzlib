@@ -201,6 +201,21 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 		return NULL;
 	}
 
+	/* check if it already is connected */
+	bool alread_connected;
+	r = sd_bus_get_property_trivial(dev->ctx->bus,
+			"org.bluez",
+			dev->path,
+			"org.bluez.Device1",
+			"Connected",
+			&error, 'b', &alread_connected);
+
+	if (alread_connected) {
+		LOG_NOTI("Device %s already was connected", macstr);
+		return dev;
+	}
+
+	/* connect signal for ServicesResolved */
 	r = sd_bus_match_signal(ctx->bus, &ctx->scan_slot,
 		"org.bluez", dev->path,
 		"org.freedesktop.DBus.Properties",
