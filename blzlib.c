@@ -44,7 +44,11 @@ blz* blz_init(const char* dev)
 		 &error, "b", 1);
 
 	if (r < 0) {
-		LOG_ERR("BLZ failed to power on: %s", error.message);
+		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_OBJECT)) {
+			LOG_ERR("Adapter %s not known", dev);
+		} else {
+			LOG_ERR("BLZ failed to power on: %s", error.message);
+		}
 		sd_bus_error_free(&error);
 		sd_bus_unref(ctx->bus);
 		free(ctx);
@@ -178,6 +182,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 	int r;
 	uint8_t mac[6];
 	sd_bus_error error = SD_BUS_ERROR_NULL;
+	bool alread_connected;
 
 	struct blz_dev* dev = calloc(1, sizeof(struct blz_dev));
 	if (dev == NULL) {
@@ -188,9 +193,8 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 	dev->ctx = ctx;
 	dev->connected = false;
 
-	blz_string_to_mac(macstr, mac);
-
 	/* create device path based on MAC address */
+	blz_string_to_mac(macstr, mac);
 	r = snprintf(dev->path, DBUS_PATH_MAX_LEN,
 			"%s/dev_%02X_%02X_%02X_%02X_%02X_%02X",
 			ctx->path, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
@@ -201,8 +205,8 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 		return NULL;
 	}
 
-	/* check if it already is connected */
-	bool alread_connected;
+	/* check if it already is connected. this also serves as a mean to check
+	 * wether the object path is known in DBus */
 	r = sd_bus_get_property_trivial(dev->ctx->bus,
 			"org.bluez",
 			dev->path,
@@ -210,22 +214,30 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 			"Connected",
 			&error, 'b', &alread_connected);
 
+	if (r < 0) {
+		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_OBJECT)) {
+			LOG_ERR("Device %s not known", macstr);
+		} else {
+			LOG_ERR("BLZ failed to get connected: %s", error.message);
+		}
+		goto exit;
+	}
+
 	if (alread_connected) {
 		LOG_NOTI("Device %s already was connected", macstr);
-		return dev;
+		goto exit;
 	}
 
 	/* connect signal for ServicesResolved */
-	r = sd_bus_match_signal(ctx->bus, &ctx->scan_slot,
+	r = sd_bus_match_signal(ctx->bus, &dev->connect_slot,
 		"org.bluez", dev->path,
 		"org.freedesktop.DBus.Properties",
 		"PropertiesChanged",
 		blz_connect_cb, dev);
 
 	if (r < 0) {
-		LOG_ERR("BLZ Failed to add conn signal");
-		free(dev);
-		return NULL;
+		LOG_ERR("BLZ Failed to add connect signal");
+		goto exit;
 	}
 
 	r = sd_bus_call_method(ctx->bus,
@@ -236,9 +248,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 
 	if (r < 0) {
 		LOG_ERR("BLZ failed to connect: %s", error.message);
-		sd_bus_error_free(&error);
-		free(dev);
-		return NULL;
+		goto exit;
 	}
 
 	/* wait until ServicesResolved property changed to true for this device */
@@ -247,7 +257,13 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 		blz_loop(ctx);
 	}
 
+exit:
 	sd_bus_error_free(&error);
+	dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
+	if (r < 0) {
+		free(dev);
+		return NULL;
+	}
 	return dev;
 }
 

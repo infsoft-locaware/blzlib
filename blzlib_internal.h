@@ -14,6 +14,7 @@ struct blz_context {
 struct blz_dev {
 	struct blz_context*	ctx;
 	char			path[DBUS_PATH_MAX_LEN];
+	sd_bus_slot*		connect_slot;
 	bool			connected;
 };
 
