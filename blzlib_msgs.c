@@ -423,7 +423,16 @@ int parse_msg_connect(sd_bus_message* m, blz_dev* dev)
 				return -2;
 			}
 
-			sd_bus_message_read_basic(m, 'b', &dev->connected);
+			/* note: bool in sd-dbus is expected to be int type */
+			int b;
+			r = sd_bus_message_read_basic(m, 'b', &b);
+			if (r < 0) {
+				LOG_ERR("parse read basic 1");
+				return r;
+			}
+
+			LOG_INF("ServicesResolved %d", b);
+			dev->connected = b;
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {

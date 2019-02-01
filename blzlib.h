@@ -35,7 +35,7 @@ bool blz_char_notify_stop(blz_char* ch);
 /** need to close(fd) to release */
 int blz_char_write_fd_acquire(blz_char* ch);
 
-void blz_loop(blz* ctx);
+void blz_loop(blz* ctx, uint64_t timeout_us);
 
 #ifdef __cplusplus
 }

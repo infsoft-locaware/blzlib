@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 	blz_scan_start(blz, scan_cb);
 
 	while (!terminate) {
-		blz_loop(blz);
+		blz_loop(blz, -1);
 	}
 
 	blz_scan_stop(blz);

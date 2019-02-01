@@ -182,7 +182,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 	int r;
 	uint8_t mac[6];
 	sd_bus_error error = SD_BUS_ERROR_NULL;
-	bool alread_connected;
+	int alread_connected; /* note: bool in sd-dbus is expected to be int type */
 
 	struct blz_dev* dev = calloc(1, sizeof(struct blz_dev));
 	if (dev == NULL) {
@@ -254,7 +254,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 	/* wait until ServicesResolved property changed to true for this device */
 	// TODO: timeout
 	while (!dev->connected) {
-		blz_loop(ctx);
+		blz_loop(ctx, -1);
 	}
 
 exit:
@@ -562,7 +562,7 @@ exit:
 	return r;
 }
 
-void blz_loop(blz* ctx)
+void blz_loop(blz* ctx, uint64_t timeout_us)
 {
 	sd_bus_message *m = NULL;
 	int r = sd_bus_process(ctx->bus, &m);
@@ -576,7 +576,7 @@ void blz_loop(blz* ctx)
 		return;
 	}
 
-	r = sd_bus_wait(ctx->bus, (uint64_t)-1);
+	r = sd_bus_wait(ctx->bus, timeout_us);
 	if (r < 0 && -r != EINTR) {
 		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
