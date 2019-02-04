@@ -494,7 +494,6 @@ int parse_msg_connect(sd_bus_message* m, blz_dev* dev)
 				return r;
 			}
 
-			LOG_INF("ServicesResolved %d", b);
 			dev->connected = b;
 
 			r = sd_bus_message_exit_container(m);
@@ -504,7 +503,7 @@ int parse_msg_connect(sd_bus_message* m, blz_dev* dev)
 			}
 		}
 		else {
-			LOG_INF("BLZ conn property %s ignored", str);
+			//LOG_INF("BLZ conn property %s ignored", str);
 			r = sd_bus_message_skip(m, "v");
 			if (r < 0) {
 				LOG_ERR("parse obj 4");
