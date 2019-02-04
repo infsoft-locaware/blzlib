@@ -18,11 +18,20 @@ struct blz_dev {
 	bool			connected;
 };
 
+/* Characteristic Flags (Characteristic Properties bit field) */
+#define BLZ_CHAR_BROADCAST		0x01
+#define BLZ_CHAR_READ			0x02
+#define BLZ_CHAR_WRITE_WITHOUT_RESPONSE	0x04
+#define BLZ_CHAR_WRITE			0x08
+#define BLZ_CHAR_NOTIFY			0x10
+#define BLZ_CHAR_INDICATE		0x20
+
 struct blz_char {
 	struct blz_context*	ctx;
 	struct blz_dev*		dev;
 	char			path[DBUS_PATH_MAX_LEN];
 	char			uuid[UUID_STR_LEN];
+	uint32_t		flags;
 	blz_notify_handler_t	notify_cb;
 	sd_bus_slot*		notify_slot;
 };

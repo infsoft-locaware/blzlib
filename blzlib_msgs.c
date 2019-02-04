@@ -10,6 +10,8 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 {
 	int r;
 	const char* str;
+	const char* uuid;
+	char** flags;
 
 	/* array of dict entries */
 	r = sd_bus_message_enter_container(m, 'a', "{sv}");
@@ -36,16 +38,27 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 				LOG_ERR("parse msg 3");
 				return r;
 			}
-			r = sd_bus_message_read_basic(m, 's', &str);
+			r = sd_bus_message_read_basic(m, 's', &uuid);
 			if (r < 0) {
 				LOG_ERR("parse msg 4");
 				return r;
 			}
 
-			//LOG_INF("UUID %s", str);
-			if (strcmp(str, ch->uuid) == 0) {
-				strncpy(ch->path, opath, DBUS_PATH_MAX_LEN);
-				return 1000;
+			r = sd_bus_message_exit_container(m);
+			if (r < 0) {
+				LOG_ERR("parse msg 5");
+				return r;
+			}
+		} else if (strcmp(str, "Flags") == 0) {
+			r = sd_bus_message_enter_container(m, 'v', "as");
+			if (r < 0) {
+				LOG_ERR("parse msg 3");
+				return r;
+			}
+			r = sd_bus_message_read_strv(m, &flags);
+			if (r < 0) {
+				LOG_ERR("parse msg 4");
+				return r;
 			}
 
 			r = sd_bus_message_exit_container(m);
@@ -71,6 +84,36 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 	if (r < 0) {
 		LOG_ERR("parse msg 8");
 		return r;
+	}
+
+	//LOG_INF("UUID %s", str);
+	if (strcmp(uuid, ch->uuid) == 0) {
+		strncpy(ch->path, opath, DBUS_PATH_MAX_LEN);
+
+		/* convert flags */
+		for (int i = 0; flags != NULL && flags[i] != NULL; i++) {
+			if (strcmp(flags[i], "broadcast") == 0) {
+				ch->flags |= BLZ_CHAR_BROADCAST;
+			} else if (strcmp(flags[i], "read") == 0) {
+				ch->flags |= BLZ_CHAR_READ;
+			} else if (strcmp(flags[i], "write-without-response") == 0) {
+				ch->flags |= BLZ_CHAR_WRITE_WITHOUT_RESPONSE;
+			} else if (strcmp(flags[i], "write") == 0) {
+				ch->flags |= BLZ_CHAR_WRITE;
+			} else if (strcmp(flags[i], "notify") == 0) {
+				ch->flags |= BLZ_CHAR_NOTIFY;
+			} else if (strcmp(flags[i], "indicate") == 0) {
+				ch->flags |= BLZ_CHAR_INDICATE;
+			}
+			free(flags[i]);
+		}
+
+		return 1000;
+	} else {
+		/* just free flags */
+		for (int i = 0; flags != NULL && flags[i] != NULL; i++) {
+			free(flags[i]);
+		}
 	}
 
 	r = sd_bus_message_exit_container(m);
