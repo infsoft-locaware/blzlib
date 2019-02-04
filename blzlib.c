@@ -87,7 +87,7 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb)
 		goto exit;
 	}
 
-	r = parse_msg_objects(reply, ctx->path, OBJ_DEVICE, ctx);
+	r = parse_msg_objects(reply, ctx->path, OBJ_DEVICE_SCAN, ctx);
 
 exit:
 	sd_bus_error_free(&error);
@@ -105,7 +105,7 @@ static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 		return -1;
 	}
 
-	r = parse_msg_one_object(m, ctx->path, OBJ_DEVICE, ctx);
+	r = parse_msg_one_object(m, ctx->path, OBJ_DEVICE_SCAN, ctx);
 	return r;
 }
 
@@ -173,7 +173,7 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 		return -1;
 	}
 
-	parse_msg_connect(m, dev);
+	parse_msg_one_interface(m, OBJ_DEVICE, NULL, dev);
 	return 0;
 }
 
