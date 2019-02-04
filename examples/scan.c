@@ -35,6 +35,8 @@ static void discover(blz* blz, const char* mac)
 
 static void scan_cb(const char* mac, const char* name, char** uuids)
 {
+	/* Note: you can't connect in the scan callback! */
+
 	LOG_INF("%s: %s", mac, name);
 
 	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
