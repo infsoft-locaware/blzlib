@@ -24,8 +24,10 @@ bool blz_scan_start(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_stop(blz* ctx);
 
 blz_dev* blz_connect(blz* ctx, const char* macstr);
+/* this frees dev */
 void blz_disconnect(blz_dev* dev);
-
+/* don't free char** */
+char** blz_get_services(blz_dev* dev);
 blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid);
 
 bool blz_char_write(blz_char* ch, const char* data, size_t len);

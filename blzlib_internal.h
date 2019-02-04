@@ -16,6 +16,7 @@ struct blz_dev {
 	char			path[DBUS_PATH_MAX_LEN];
 	sd_bus_slot*		connect_slot;
 	bool			connected;
+	char**			service_uuids;
 };
 
 /* Characteristic Flags (Characteristic Properties bit field) */

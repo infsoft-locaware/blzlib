@@ -267,11 +267,8 @@ exit:
 	return dev;
 }
 
-#if 0
-// unused: get services on device
-void blz_get_services(blz_dev* dev)
+char** blz_get_services(blz_dev* dev)
 {
-	char** uuids;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 
 	int r = sd_bus_get_property_strv(dev->ctx->bus,
@@ -279,19 +276,18 @@ void blz_get_services(blz_dev* dev)
 			dev->path,
 			"org.bluez.Device1",
 			"UUIDs",
-			&error, &uuids);
+			&error, &dev->service_uuids);
 
 	if (r < 0)
 		LOG_ERR("couldnt get services: %s", error.message);
 
-	for (int i = 0; uuids[i] != NULL; i++) {
-		LOG_INF("UUID %s", uuids[i]);
-		free(uuids[i]);
+	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL; i++) {
+		LOG_INF("UUID %s", dev->service_uuids[i]);
 	}
 
 	sd_bus_error_free(&error);
+	return dev->service_uuids;
 }
-#endif
 
 void blz_disconnect(blz_dev* dev)
 {
@@ -312,6 +308,13 @@ void blz_disconnect(blz_dev* dev)
 	}
 
 	sd_bus_error_free(&error);
+
+	/* free */
+	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL; i++) {
+		free(dev->service_uuids[i]);
+	}
+
+	free(dev);
 }
 
 static bool find_char_by_uuid(blz_char* ch)
