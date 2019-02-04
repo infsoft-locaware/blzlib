@@ -267,7 +267,7 @@ exit:
 	return dev;
 }
 
-char** blz_get_services(blz_dev* dev)
+char** blz_list_service_uuids(blz_dev* dev)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 
@@ -340,6 +340,50 @@ exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
 	return r == 1000 ? true : false;
+}
+
+char** blz_list_char_uuids(blz_dev* dev)
+{
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	sd_bus_message* reply = NULL;
+	int r;
+
+	r = sd_bus_call_method(dev->ctx->bus,
+		"org.bluez", "/",
+		"org.freedesktop.DBus.ObjectManager",
+		"GetManagedObjects",
+		&error, &reply, "");
+
+	if (r < 0) {
+		LOG_ERR("Failed to get managed objects: %s", error.message);
+		goto exit;
+	}
+
+	/* first count how many characteristics there are and alloc space */
+	int cnt = 0;
+	parse_msg_objects(reply, dev->path, OBJ_CHAR_COUNT, &cnt);
+	dev->char_uuids = calloc(cnt+1, sizeof(char*));
+	dev->char_uuids[cnt] = NULL;
+	if (dev->char_uuids == NULL) {
+		LOG_ERR("BLZ alloc of chars failed");
+		goto exit;
+	}
+
+	/* now parse all characteristics data */
+	sd_bus_message_rewind(reply, true);
+	r = parse_msg_objects(reply, dev->path, OBJ_CHARS_ALL, dev);
+	if (r < 0) {
+		LOG_ERR("Failed to parse");
+		goto exit;
+	}
+
+exit:
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(reply);
+	if (r < 0) {
+		return NULL;
+	}
+	return dev->char_uuids;
 }
 
 blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)

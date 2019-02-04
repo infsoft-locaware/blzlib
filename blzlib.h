@@ -26,8 +26,12 @@ bool blz_scan_stop(blz* ctx);
 blz_dev* blz_connect(blz* ctx, const char* macstr);
 /* this frees dev */
 void blz_disconnect(blz_dev* dev);
-/* don't free char** */
-char** blz_get_services(blz_dev* dev);
+
+/** returns NULL terminated list of service UUID strings, don't free them */
+char** blz_list_service_uuids(blz_dev* dev);
+/** returns NULL terminated list of characteristic UUID strings, don't free them */
+char** blz_list_char_uuids(blz_dev* dev);
+
 blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid);
 
 bool blz_char_write(blz_char* ch, const char* data, size_t len);

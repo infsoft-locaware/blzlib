@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <systemd/sd-bus.h>
 
 #include "blzlib.h"
@@ -86,9 +87,17 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 		return r;
 	}
 
-	//LOG_INF("UUID %s", str);
-	if (strcmp(uuid, ch->uuid) == 0) {
+	r = sd_bus_message_exit_container(m);
+	if (r < 0) {
+		LOG_ERR("parse msg 9");
+		return r;
+	}
+
+	//LOG_INF("UUID %s", uuid);
+	if (ch->uuid[0] == '\0' || strcmp(uuid, ch->uuid) == 0) {
 		strncpy(ch->path, opath, DBUS_PATH_MAX_LEN);
+		if (ch->uuid[0] == '\0')
+			strncpy(ch->uuid, uuid, UUID_STR_LEN);
 
 		/* convert flags */
 		for (int i = 0; flags != NULL && flags[i] != NULL; i++) {
@@ -116,11 +125,6 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 		}
 	}
 
-	r = sd_bus_message_exit_container(m);
-	if (r < 0) {
-		LOG_ERR("parse msg 9");
-		return r;
-	}
 	return r;
 }
 
@@ -271,6 +275,22 @@ static int parse_msg_interfaces(sd_bus_message* m, enum e_obj eobj, const char* 
 		}
 		else if ( eobj == OBJ_DEVICE && strcmp(str, "org.bluez.Device1") == 0) {
 			r = parse_msg_device_properties(m, opath, user);
+		}
+		else if (eobj == OBJ_CHAR_COUNT && strcmp(str, "org.bluez.GattCharacteristic1") == 0) {
+			int* cnt = user;
+			(*cnt)++;
+			r = sd_bus_message_skip(m, "a{sv}");
+			if (r < 0) {
+				LOG_ERR("parse intf 3");
+				return r;
+			}
+		}
+		else if (eobj == OBJ_CHARS_ALL && strcmp(str, "org.bluez.GattCharacteristic1") == 0) {
+			blz_dev* dev = user;
+			blz_char ch;
+			parse_msg_char_properties(m, opath, &ch);
+			dev->char_uuids[dev->chars_idx] = strdup(ch.uuid);
+			dev->chars_idx++;
 		}
 		else {
 			r = sd_bus_message_skip(m, "a{sv}");

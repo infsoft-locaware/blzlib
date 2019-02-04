@@ -17,6 +17,8 @@ struct blz_dev {
 	sd_bus_slot*		connect_slot;
 	bool			connected;
 	char**			service_uuids;
+	char**			char_uuids;
+	size_t			chars_idx;
 };
 
 /* Characteristic Flags (Characteristic Properties bit field) */
@@ -37,7 +39,7 @@ struct blz_char {
 	sd_bus_slot*		notify_slot;
 };
 
-enum e_obj { OBJ_CHAR, OBJ_DEVICE };
+enum e_obj { OBJ_CHAR, OBJ_DEVICE, OBJ_CHAR_COUNT, OBJ_CHARS_ALL };
 
 int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
 int parse_msg_one_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);

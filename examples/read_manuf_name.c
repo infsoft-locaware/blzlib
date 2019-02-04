@@ -26,6 +26,11 @@ int main(int argc, char** argv)
 	if (!dev)
 		goto exit;
 
+	char** uuids = blz_list_char_uuids(dev);
+	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
+		LOG_INF("Found UUID %s", uuids[i]);
+	}
+
 	// Read manufacturer name string
 	rch = blz_get_char_from_uuid(dev, "00002a29-0000-1000-8000-00805f9b34fb");
 	if (!rch)
