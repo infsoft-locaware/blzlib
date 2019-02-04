@@ -278,11 +278,8 @@ char** blz_list_service_uuids(blz_dev* dev)
 			"UUIDs",
 			&error, &dev->service_uuids);
 
-	if (r < 0)
+	if (r < 0) {
 		LOG_ERR("couldnt get services: %s", error.message);
-
-	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL; i++) {
-		LOG_INF("UUID %s", dev->service_uuids[i]);
 	}
 
 	sd_bus_error_free(&error);
