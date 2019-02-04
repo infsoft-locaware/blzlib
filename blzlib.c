@@ -371,6 +371,11 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len)
 	sd_bus_message* reply = NULL;
 	int r;
 
+	if (!(ch->flags & (BLZ_CHAR_WRITE | BLZ_CHAR_WRITE_WITHOUT_RESPONSE))) {
+		LOG_ERR("BLZ characteristic does not support write");
+		return false;
+	}
+
 	r = sd_bus_message_new_method_call(ch->ctx->bus, &call,
 		"org.bluez", ch->path,
 		"org.bluez.GattCharacteristic1",
@@ -419,6 +424,11 @@ int blz_char_read(blz_char* ch, char* data, size_t len)
 	const void* ptr;
 	size_t rlen = -1;
 	int r;
+
+	if (!(ch->flags & BLZ_CHAR_READ)) {
+		LOG_ERR("BLZ characteristic does not support read");
+		return false;
+	}
 
 	r = sd_bus_call_method(ch->ctx->bus,
 		"org.bluez", ch->path,
@@ -474,6 +484,11 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
 	sd_bus_message* reply = NULL;
 	int r;
 
+	if (!(ch->flags & (BLZ_CHAR_NOTIFY | BLZ_CHAR_INDICATE))) {
+		LOG_ERR("BLZ characteristic does not support notify");
+		return false;
+	}
+
 	ch->notify_cb = cb;
 
 	r = sd_bus_match_signal(ch->ctx->bus, &ch->notify_slot,
@@ -509,7 +524,7 @@ bool blz_char_notify_stop(blz_char* ch)
 	sd_bus_message* reply = NULL;
 	int r;
 
-	if (ch == NULL)
+	if (ch == NULL || ch->notify_slot == NULL)
 		return false;
 
 	r = sd_bus_call_method(ch->ctx->bus,
@@ -536,6 +551,11 @@ int blz_char_write_fd_acquire(blz_char* ch)
 	sd_bus_message* reply = NULL;
 	int fd = -1;
 	int r;
+
+	if (!(ch->flags & BLZ_CHAR_WRITE_WITHOUT_RESPONSE)) {
+		LOG_ERR("BLZ characteristic does not support write-without-response");
+		return -1;
+	}
 
 	r = sd_bus_call_method(ch->ctx->bus,
 		"org.bluez", ch->path,
