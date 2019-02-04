@@ -17,7 +17,7 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 	/* array of dict entries */
 	r = sd_bus_message_enter_container(m, 'a', "{sv}");
 	if (r < 0) {
-		LOG_ERR("parse msg 1");
+		LOG_ERR("BLZ error parse char 1");
 		return r;
 	}
 
@@ -27,7 +27,7 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 		/* property name */
 		r = sd_bus_message_read_basic(m, 's', &str);
 		if (r < 0) {
-			LOG_ERR("parse msg 2");
+			LOG_ERR("BLZ error parse char 2");
 			return r;
 		}
 
@@ -36,60 +36,60 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 		if (strcmp(str, "UUID") == 0) {
 			r = sd_bus_message_enter_container(m, 'v', "s");
 			if (r < 0) {
-				LOG_ERR("parse msg 3");
+				LOG_ERR("BLZ error parse char 3");
 				return r;
 			}
 			r = sd_bus_message_read_basic(m, 's', &uuid);
 			if (r < 0) {
-				LOG_ERR("parse msg 4");
+				LOG_ERR("BLZ error parse char 4");
 				return r;
 			}
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {
-				LOG_ERR("parse msg 5");
+				LOG_ERR("BLZ error parse char 5");
 				return r;
 			}
 		} else if (strcmp(str, "Flags") == 0) {
 			r = sd_bus_message_enter_container(m, 'v', "as");
 			if (r < 0) {
-				LOG_ERR("parse msg 3");
+				LOG_ERR("BLZ error parse char 6");
 				return r;
 			}
 			r = sd_bus_message_read_strv(m, &flags);
 			if (r < 0) {
-				LOG_ERR("parse msg 4");
+				LOG_ERR("BLZ error parse char 7");
 				return r;
 			}
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {
-				LOG_ERR("parse msg 5");
+				LOG_ERR("BLZ error parse char 8");
 				return r;
 			}
 		} else {
 			r = sd_bus_message_skip(m, "v");
 			if (r < 0) {
-				LOG_ERR("parse msg 6");
+				LOG_ERR("BLZ error parse char 9");
 				return r;
 			}
 		}
 
 		r = sd_bus_message_exit_container(m);
 		if (r < 0) {
-			LOG_ERR("parse msg 7");
+			LOG_ERR("BLZ error parse char 10");
 			return r;
 		}
 	}
 
 	if (r < 0) {
-		LOG_ERR("parse msg 8");
+		LOG_ERR("BLZ error parse char 11");
 		return r;
 	}
 
 	r = sd_bus_message_exit_container(m);
 	if (r < 0) {
-		LOG_ERR("parse msg 9");
+		LOG_ERR("BLZ error parse char 12");
 		return r;
 	}
 
@@ -138,7 +138,7 @@ int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz_dev* d
 	/* array of dict entries */
 	r = sd_bus_message_enter_container(m, 'a', "{sv}");
 	if (r < 0) {
-		LOG_ERR("parse msg 1");
+		LOG_ERR("BLZ error parse dev 1");
 		return r;
 	}
 
@@ -148,7 +148,7 @@ int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz_dev* d
 		/* property name */
 		r = sd_bus_message_read_basic(m, 's', &str);
 		if (r < 0) {
-			LOG_ERR("parse msg 2");
+			LOG_ERR("BLZ error parse dev 2");
 			return r;
 		}
 
@@ -157,12 +157,12 @@ int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz_dev* d
 		if (strcmp(str, "Name") == 0) {
 			r = sd_bus_message_enter_container(m, 'v', "s");
 			if (r < 0) {
-				LOG_ERR("parse msg 3");
+				LOG_ERR("BLZ error parse dev 3");
 				return r;
 			}
 			r = sd_bus_message_read_basic(m, 's', &name);
 			if (r < 0) {
-				LOG_ERR("parse msg 4");
+				LOG_ERR("BLZ error parse dev 4");
 				return r;
 			}
 
@@ -170,19 +170,19 @@ int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz_dev* d
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {
-				LOG_ERR("parse msg 5");
+				LOG_ERR("BLZ error parse dev 5");
 				return r;
 			}
 		}
 		else if (strcmp(str, "Address") == 0) {
 			r = sd_bus_message_enter_container(m, 'v', "s");
 			if (r < 0) {
-				LOG_ERR("parse msg 3");
+				LOG_ERR("BLZ error parse dev 6");
 				return r;
 			}
 			r = sd_bus_message_read_basic(m, 's', &mac);
 			if (r < 0) {
-				LOG_ERR("parse msg 4");
+				LOG_ERR("BLZ error parse dev 7");
 				return r;
 			}
 
@@ -190,34 +190,34 @@ int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz_dev* d
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {
-				LOG_ERR("parse msg 5");
+				LOG_ERR("BLZ error parse dev 8");
 				return r;
 			}
 		}
 		else if (strcmp(str, "UUIDs") == 0) {
 			r = sd_bus_message_enter_container(m, 'v', "as");
 			if (r < 0) {
-				LOG_ERR("parse msg 3");
+				LOG_ERR("BLZ error parse dev 9");
 				return r;
 			}
 
 			/* need to free */
 			r = sd_bus_message_read_strv(m, &dev->service_uuids);
 			if (r < 0) {
-				LOG_ERR("parse msg 4");
+				LOG_ERR("BLZ error parse dev 10");
 				return r;
 			}
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {
-				LOG_ERR("parse msg 5");
+				LOG_ERR("BLZ error parse dev 11");
 				return r;
 			}
 		}
 		else if (strcmp(str, "ServicesResolved") == 0) {
 			r = sd_bus_message_enter_container(m, 'v', "b");
 			if (r < 0) {
-				LOG_ERR("BLZ msg read error");
+				LOG_ERR("BLZ error parse dev 12");
 				return -2;
 			}
 
@@ -225,7 +225,7 @@ int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz_dev* d
 			int b;
 			r = sd_bus_message_read_basic(m, 'b', &b);
 			if (r < 0) {
-				LOG_ERR("parse read basic 1");
+				LOG_ERR("BLZ error parse dev 13");
 				return r;
 			}
 
@@ -233,33 +233,33 @@ int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz_dev* d
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {
-				LOG_ERR("parse obj ra3");
+				LOG_ERR("BLZ error parse dev 14");
 				return r;
 			}
 		}
 		else {
 			r = sd_bus_message_skip(m, "v");
 			if (r < 0) {
-				LOG_ERR("parse msg 6");
+				LOG_ERR("BLZ error parse dev 15");
 				return r;
 			}
 		}
 
 		r = sd_bus_message_exit_container(m);
 		if (r < 0) {
-			LOG_ERR("parse msg 7");
+			LOG_ERR("BLZ error parse dev 16");
 			return r;
 		}
 	}
 
 	if (r < 0) {
-		LOG_ERR("parse msg 8");
+		LOG_ERR("BLZ error parse dev 17");
 		return r;
 	}
 
 	r = sd_bus_message_exit_container(m);
 	if (r < 0) {
-		LOG_ERR("parse msg 9");
+		LOG_ERR("BLZ error parse dev 18");
 		return r;
 	}
 	return r;
@@ -272,7 +272,7 @@ int parse_msg_one_interface(sd_bus_message* m, enum e_obj eobj, const char* opat
 
 	r = sd_bus_message_read_basic(m, 's', &str);
 		if (r < 0) {
-			LOG_ERR("parse intf 2");
+			LOG_ERR("BLZ error parse 1intf 1");
 			return r;
 		}
 
@@ -302,7 +302,7 @@ int parse_msg_one_interface(sd_bus_message* m, enum e_obj eobj, const char* opat
 			(*cnt)++;
 			r = sd_bus_message_skip(m, "a{sv}");
 			if (r < 0) {
-				LOG_ERR("parse intf 3");
+				LOG_ERR("BLZ error parse 1intf 2");
 				return r;
 			}
 		}
@@ -316,7 +316,7 @@ int parse_msg_one_interface(sd_bus_message* m, enum e_obj eobj, const char* opat
 		else {
 			r = sd_bus_message_skip(m, "a{sv}");
 			if (r < 0) {
-				LOG_ERR("parse intf 3");
+				LOG_ERR("BLZ error parse 1intf 3");
 				return r;
 			}
 		}
@@ -330,7 +330,7 @@ static int parse_msg_interfaces(sd_bus_message* m, enum e_obj eobj, const char* 
 	/* array of interface names with array of properties */
 	r = sd_bus_message_enter_container(m, 'a', "{sa{sv}}");
 	if (r < 0) {
-		LOG_ERR("parse intf 1");
+		LOG_ERR("BLZ error parse intf 1");
 		return r;
 	}
 
@@ -341,19 +341,19 @@ static int parse_msg_interfaces(sd_bus_message* m, enum e_obj eobj, const char* 
 
 		r = sd_bus_message_exit_container(m);
 		if (r < 0) {
-			LOG_ERR("parse intf 4");
+			LOG_ERR("BLZ error parse intf 2");
 			return r;
 		}
 	}
 
 	if (r < 0) {
-		LOG_ERR("parse intf 5");
+		LOG_ERR("BLZ error parse intf 3");
 		return r;
 	}
 
 	r = sd_bus_message_exit_container(m);
         if (r < 0) {
-		LOG_ERR("parse intf 6");
+		LOG_ERR("BLZ error parse intf 4");
 		return r;
 	}
 	return r;
@@ -365,11 +365,9 @@ int parse_msg_one_object(sd_bus_message* m, const char* match_path, enum e_obj e
 
 	int r = sd_bus_message_read_basic(m, 'o', &opath);
 	if (r < 0) {
-		LOG_ERR("parse obj 2");
+		LOG_ERR("BLZ error parse 1obj 1");
 		return r;
 	}
-
-	//LOG_INF("O %s", opath);
 
 	/* check if it is below our own device path, otherwise skip */
 	if (strncmp(opath, match_path, strlen(match_path)) == 0) {
@@ -379,7 +377,7 @@ int parse_msg_one_object(sd_bus_message* m, const char* match_path, enum e_obj e
 	} else {
 		r = sd_bus_message_skip(m, "a{sa{sv}}");
 		if (r < 0) {
-			LOG_ERR("parse obj 4");
+			LOG_ERR("BLZ error parse 1obj 2");
 			return r;
 		}
 	}
@@ -391,7 +389,7 @@ int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 	/* array of objects */
 	int r = sd_bus_message_enter_container(m, 'a', "{oa{sa{sv}}}");
         if (r < 0) {
-		LOG_ERR("parse obj 1");
+		LOG_ERR("BLZ error parse obj 1");
                 return r;
 	}
 
@@ -399,7 +397,7 @@ int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 	{
 		r = parse_msg_one_object(m, match_path, eobj, user);
 		if (r < 0) {
-			LOG_ERR("parse obj 3");
+			LOG_ERR("BLZ error in parse_msg_one_object");
 			return r;
 		}
 		if (r == 1000)
@@ -407,19 +405,19 @@ int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 
 		r = sd_bus_message_exit_container(m);
 		if (r < 0) {
-			LOG_ERR("parse obj 3");
+			LOG_ERR("BLZ error parse obj 2");
 			return r;
 		}
 	}
 
 	if (r < 0) {
-		LOG_ERR("parse obj 4");
+		LOG_ERR("BLZ error parse obj 3");
 		return r;
 	}
 
 	r = sd_bus_message_exit_container(m);
 	if (r < 0) {
-		LOG_ERR("parse obj 5");
+		LOG_ERR("BLZ error parse obj 4");
 	}
 	return r;
 }
