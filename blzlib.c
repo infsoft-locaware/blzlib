@@ -313,6 +313,9 @@ void blz_disconnect(blz_dev* dev)
 	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL; i++) {
 		free(dev->service_uuids[i]);
 	}
+	for (int i = 0; dev->char_uuids != NULL && dev->char_uuids[i] != NULL; i++) {
+		free(dev->char_uuids[i]);
+	}
 
 	free(dev);
 }
