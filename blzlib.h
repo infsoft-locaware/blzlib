@@ -32,7 +32,7 @@ bool blz_char_write(blz_char* ch, const char* data, size_t len);
 int blz_char_read(blz_char* ch, char* data, size_t len);
 bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb);
 bool blz_char_notify_stop(blz_char* ch);
-/** need to close(fd) to release */
+/** returns fd or -1 on error. need to close(fd) to release */
 int blz_char_write_fd_acquire(blz_char* ch);
 
 void blz_loop(blz* ctx, uint64_t timeout_us);
