@@ -235,7 +235,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 				return r;
 			}
 
-			dev->connected = b;
+			dev->services_resolved = b;
 
 			r = sd_bus_message_exit_container(m);
 			if (r < 0) {

@@ -192,7 +192,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 	}
 
 	dev->ctx = ctx;
-	dev->connected = false;
+	dev->services_resolved = false;
 
 	/* create device path based on MAC address */
 	blz_string_to_mac(macstr, mac);
@@ -252,9 +252,11 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 		goto exit;
 	}
 
-	/* wait until ServicesResolved property changed to true for this device */
+	/* wait until ServicesResolved property changed to true for this device.
+	 * we usually receive connected = true before that, but at that time we
+	 * are not ready yet to look up service and characteristic UUIDs */
 	// TODO: timeout
-	while (!dev->connected) {
+	while (!dev->services_resolved) {
 		blz_loop(ctx, -1);
 	}
 
