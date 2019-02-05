@@ -6,6 +6,9 @@
 #define MAC_STR_LEN		18
 #define NAME_STR_LEN		20
 
+/* this return value is used to indicate that we found what was searched */
+#define RETURN_FOUND		1000
+
 struct blz_context {
 	sd_bus*			bus;
 	char			path[DBUS_PATH_MAX_LEN];

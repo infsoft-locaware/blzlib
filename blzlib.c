@@ -339,7 +339,7 @@ static bool find_char_by_uuid(blz_char* ch)
 exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	return r == 1000 ? true : false;
+	return r == RETURN_FOUND;
 }
 
 char** blz_list_char_uuids(blz_dev* dev)

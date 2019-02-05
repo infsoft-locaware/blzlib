@@ -117,7 +117,7 @@ static int parse_msg_char_properties(sd_bus_message* m, const char* opath, blz_c
 			free(flags[i]);
 		}
 
-		return 1000;
+		return RETURN_FOUND;
 	} else {
 		/* just free flags */
 		for (int i = 0; flags != NULL && flags[i] != NULL; i++) {
@@ -278,8 +278,12 @@ int parse_msg_one_interface(sd_bus_message* m, enum e_obj eobj, const char* opat
 
 		if (eobj == OBJ_CHAR && strcmp(str, "org.bluez.GattCharacteristic1") == 0) {
 			r = parse_msg_char_properties(m, opath, user);
-			if (r == 1000) // found
+			if (r < 0) {
+				LOG_ERR("BLZ error in parse_msg_char_properties");
 				return r;
+			} else if (r == RETURN_FOUND) {
+				return r;
+			}
 		}
 		else if (eobj == OBJ_DEVICE && strcmp(str, "org.bluez.Device1") == 0) {
 			r = parse_msg_device_properties(m, opath, user);
@@ -337,7 +341,13 @@ static int parse_msg_interfaces(sd_bus_message* m, enum e_obj eobj, const char* 
 	/* next entry */
 	while ((r = sd_bus_message_enter_container(m, 'e', "sa{sv}")) > 0)
 	{
-		parse_msg_one_interface(m, eobj, opath, user);
+		r = parse_msg_one_interface(m, eobj, opath, user);
+		if (r < 0) {
+			LOG_ERR("BLZ error in parse_msg_one_interface");
+			return r;
+		} else if (r == RETURN_FOUND) {
+			return r;
+		}
 
 		r = sd_bus_message_exit_container(m);
 		if (r < 0) {
@@ -372,8 +382,12 @@ int parse_msg_one_object(sd_bus_message* m, const char* match_path, enum e_obj e
 	/* check if it is below our own device path, otherwise skip */
 	if (strncmp(opath, match_path, strlen(match_path)) == 0) {
 		r = parse_msg_interfaces(m, eobj, opath, user);
-		if (r == 1000)
+		if (r < 0) {
+			LOG_ERR("BLZ error in parse_msg_interfaces");
 			return r;
+		} else if (r == RETURN_FOUND) {
+			return r;
+		}
 	} else {
 		r = sd_bus_message_skip(m, "a{sa{sv}}");
 		if (r < 0) {
@@ -399,9 +413,9 @@ int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 		if (r < 0) {
 			LOG_ERR("BLZ error in parse_msg_one_object");
 			return r;
-		}
-		if (r == 1000)
+		} else if (r == RETURN_FOUND) {
 			return r;
+		}
 
 		r = sd_bus_message_exit_container(m);
 		if (r < 0) {
