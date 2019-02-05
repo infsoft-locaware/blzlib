@@ -136,6 +136,8 @@ int main(int argc, char** argv)
 	sd_event_add_io(event, NULL, STDIN_FILENO,  EPOLLIN, stdin_handler, &wfd);
 	sd_bus_attach_event(sdbus, event, SD_EVENT_PRIORITY_NORMAL);
 
+	LOG_INF("Connected! Enter commands:");
+
 	sd_event_loop(event);
 
 exit:
