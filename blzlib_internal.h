@@ -48,10 +48,9 @@ struct blz_char {
 
 enum e_obj { OBJ_CHAR, OBJ_DEVICE, OBJ_DEVICE_SCAN, OBJ_CHAR_COUNT, OBJ_CHARS_ALL };
 
-int parse_msg_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
-int parse_msg_one_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
-int parse_msg_device_properties(sd_bus_message* m, const char* opath, blz_dev* dev);
-int parse_msg_notify(sd_bus_message* m, const void** ptr, size_t* len);
-int parse_msg_one_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, void* user);
+int msg_parse_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
+int msg_parse_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
+int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, void* user);
+int msg_parse_notify(sd_bus_message* m, const void** ptr, size_t* len);
 
 #endif

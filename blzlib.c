@@ -87,7 +87,8 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb)
 		goto exit;
 	}
 
-	r = parse_msg_objects(reply, ctx->path, OBJ_DEVICE_SCAN, ctx);
+	r = msg_parse_objects(reply, ctx->path, OBJ_DEVICE_SCAN, ctx);
+	/* error logging done in function */
 
 exit:
 	sd_bus_error_free(&error);
@@ -97,7 +98,6 @@ exit:
 
 static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 {
-	int r;
 	blz* ctx = user;
 
 	if (ctx == NULL || ctx->scan_cb == NULL) {
@@ -105,8 +105,8 @@ static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 		return -1;
 	}
 
-	r = parse_msg_one_object(m, ctx->path, OBJ_DEVICE_SCAN, ctx);
-	return r;
+	/* error logging done in function */
+	return msg_parse_object(m, ctx->path, OBJ_DEVICE_SCAN, ctx);
 }
 
 bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
@@ -173,7 +173,8 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 		return -1;
 	}
 
-	parse_msg_one_interface(m, OBJ_DEVICE, NULL, dev);
+	/* error logging done in function */
+	msg_parse_interface(m, OBJ_DEVICE, NULL, dev);
 	return 0;
 }
 
@@ -334,7 +335,8 @@ static bool find_char_by_uuid(blz_char* ch)
 		goto exit;
 	}
 
-	r = parse_msg_objects(reply, ch->dev->path, OBJ_CHAR, ch);
+	r = msg_parse_objects(reply, ch->dev->path, OBJ_CHAR, ch);
+	/* error logging done in function */
 
 exit:
 	sd_bus_error_free(&error);
@@ -361,7 +363,12 @@ char** blz_list_char_uuids(blz_dev* dev)
 
 	/* first count how many characteristics there are and alloc space */
 	int cnt = 0;
-	parse_msg_objects(reply, dev->path, OBJ_CHAR_COUNT, &cnt);
+	r = msg_parse_objects(reply, dev->path, OBJ_CHAR_COUNT, &cnt);
+	if (r < 0) {
+		goto exit;
+	}
+
+	/* alloc space for them */
 	dev->char_uuids = calloc(cnt+1, sizeof(char*));
 	dev->char_uuids[cnt] = NULL;
 	if (dev->char_uuids == NULL) {
@@ -371,11 +378,8 @@ char** blz_list_char_uuids(blz_dev* dev)
 
 	/* now parse all characteristics data */
 	sd_bus_message_rewind(reply, true);
-	r = parse_msg_objects(reply, dev->path, OBJ_CHARS_ALL, dev);
-	if (r < 0) {
-		LOG_ERR("Failed to parse");
-		goto exit;
-	}
+	r = msg_parse_objects(reply, dev->path, OBJ_CHARS_ALL, dev);
+	/* error logging done in function */
 
 exit:
 	sd_bus_error_free(&error);
@@ -516,7 +520,7 @@ static int blz_signal_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 		return -1;
 	}
 
-	r = parse_msg_notify(m, &ptr, &len);
+	r = msg_parse_notify(m, &ptr, &len);
 
 	if (r > 0 && ptr != NULL) {
 		ch->notify_cb(ptr, len, ch);
