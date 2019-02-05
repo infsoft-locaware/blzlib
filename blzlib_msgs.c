@@ -468,7 +468,7 @@ int msg_parse_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 	return r;
 }
 
-int msg_parse_notify(sd_bus_message* m, const void** ptr, size_t* len)
+int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* len)
 {
 	int r;
 	char* str;
@@ -508,25 +508,40 @@ int msg_parse_notify(sd_bus_message* m, const void** ptr, size_t* len)
 	}
 
 	/* ignore all except Value */
-	if (strcmp(str, "Value") != 0) {
+	if (strcmp(str, "Notifying") == 0) {
+		r = sd_bus_message_enter_container(m, 'v', "b");
+		if (r < 0) {
+			LOG_ERR("BLZ error parse dev 12");
+			return -2;
+		}
+
+		/* note: bool in sd-dbus is expected to be int type */
+		int b;
+		r = sd_bus_message_read_basic(m, 'b', &b);
+		if (r < 0) {
+			LOG_ERR("BLZ error parse dev 13");
+			return -2;
+		}
+
+		ch->notifying = b;
+	} else if (strcmp(str, "Value") == 0) {
+		/* enter variant */
+		r = sd_bus_message_enter_container(m, 'v', "ay");
+		if (r < 0) {
+			LOG_ERR("BLZ signal msg read error");
+			return -2;
+		}
+
+		/* get byte array */
+		r = sd_bus_message_read_array(m, 'y', ptr, len);
+		if (r < 0) {
+			LOG_ERR("BLZ signal msg read error");
+			return -2;
+		}
+	} else {
 		LOG_INF("BLZ signal property %s ignored", str);
 		return 0;
 	}
-
-	/* enter variant */
-	r = sd_bus_message_enter_container(m, 'v', "ay");
-	if (r < 0) {
-		LOG_ERR("BLZ signal msg read error");
-		return -2;
-	}
-
-	/* get byte array */
-	r = sd_bus_message_read_array(m, 'y', ptr, len);
-	if (r < 0) {
-		LOG_ERR("BLZ signal msg read error");
-		return -2;
-	}
-
 	/* no need to exit containers as we stop parsing */
 	return r;
 }

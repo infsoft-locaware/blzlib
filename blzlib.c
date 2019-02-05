@@ -522,7 +522,7 @@ static int blz_signal_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 		return -1;
 	}
 
-	r = msg_parse_notify(m, &ptr, &len);
+	r = msg_parse_notify(m, ch, &ptr, &len);
 
 	if (r > 0 && ptr != NULL) {
 		ch->notify_cb(ptr, len, ch);
@@ -563,6 +563,12 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to start notify: %s", error.message);
+	}
+
+	/* wait until Notifying property changed to true */
+	// TODO: timeout
+	while (!ch->notifying) {
+		blz_loop(ch->ctx, -1);
 	}
 
 exit:
