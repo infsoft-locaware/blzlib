@@ -643,8 +643,7 @@ exit:
 
 void blz_loop(blz* ctx, uint64_t timeout_us)
 {
-	sd_bus_message *m = NULL;
-	int r = sd_bus_process(ctx->bus, &m);
+	int r = sd_bus_process(ctx->bus, NULL);
 	if (r < 0) {
 		LOG_ERR("BLZ loop process error: %s", strerror(-r));
 		return;
