@@ -670,7 +670,6 @@ int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms)
 	uint32_t end_ms = current_ms + timeout_ms;
 
 	while (!*check && current_ms < end_ms) {
-		LOG_INF("loop for %d", end_ms - current_ms);
 		blz_loop(ctx, (end_ms - current_ms) * 1000);
 		clock_gettime(CLOCK_MONOTONIC, &ts);
 		current_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;

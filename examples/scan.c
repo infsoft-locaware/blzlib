@@ -69,12 +69,10 @@ int main(int argc, char** argv)
 	LOG_INF("Cached devices...");
 	blz_known_devices(blz, scan_cb);
 
-	LOG_INF("Scanning... press Ctrl-C to continue...");
+	LOG_INF("Scanning for 10 seconds... press Ctrl-C to cancel...");
 	blz_scan_start(blz, scan_cb);
 
-	while (!terminate) {
-		blz_loop(blz, -1);
-	}
+	blz_loop_timeout(blz, &terminate, 10000);
 
 	blz_scan_stop(blz);
 
