@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 #include <systemd/sd-bus.h>
 
 #include "blzlib.h"
@@ -255,9 +256,9 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 	/* wait until ServicesResolved property changed to true for this device.
 	 * we usually receive connected = true before that, but at that time we
 	 * are not ready yet to look up service and characteristic UUIDs */
-	// TODO: timeout
-	while (!dev->services_resolved) {
-		blz_loop(ctx, -1);
+	r = blz_loop_timeout(ctx, &dev->services_resolved, 5000);
+	if (r < 0) {
+		LOG_ERR("BLZ timeout waiting for ServicesResolved");
 	}
 
 exit:
@@ -566,9 +567,9 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
 	}
 
 	/* wait until Notifying property changed to true */
-	// TODO: timeout
-	while (!ch->notifying) {
-		blz_loop(ch->ctx, -1);
+	r = blz_loop_timeout(ch->ctx, &ch->notifying, 5000);
+	if (r < 0) {
+		LOG_ERR("BLZ timeout waiting for Notifying");
 	}
 
 exit:
@@ -658,4 +659,22 @@ void blz_loop(blz* ctx, uint64_t timeout_us)
 	if (r < 0 && -r != EINTR) {
 		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
+}
+
+/** return -1 on timeout */
+int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms)
+{
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	uint32_t current_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+	uint32_t end_ms = current_ms + timeout_ms;
+
+	while (!*check && current_ms < end_ms) {
+		LOG_INF("loop for %d", end_ms - current_ms);
+		blz_loop(ctx, (end_ms - current_ms) * 1000);
+		clock_gettime(CLOCK_MONOTONIC, &ts);
+		current_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+	}
+
+	return *check ? 0 : -1;
 }

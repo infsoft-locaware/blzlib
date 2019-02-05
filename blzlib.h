@@ -42,6 +42,7 @@ bool blz_char_notify_stop(blz_char* ch);
 int blz_char_write_fd_acquire(blz_char* ch);
 
 void blz_loop(blz* ctx, uint64_t timeout_us);
+int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms);
 
 #ifdef __cplusplus
 }
