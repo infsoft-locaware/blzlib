@@ -14,15 +14,15 @@ install_headers('blzlib.h', 'blzlib_util.h')
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(blzlib)
 
-executable('nordic_uart', 
-	'examples/nordic_uart.c',
+executable('blz-nordic-uart',
+	'examples/nordic-uart.c',
 	link_with: blzlib,
 	dependencies: libsystemd)
 
-executable('read_manuf_name',
-	'examples/read_manuf_name.c',
+executable('blz-read-manuf-name',
+	'examples/read-manuf-name.c',
 	link_with: blzlib)
 
-executable('scan',
-	'examples/scan.c',
+executable('blz-scan-discover',
+	'examples/scan-discover.c',
 	link_with: blzlib)
