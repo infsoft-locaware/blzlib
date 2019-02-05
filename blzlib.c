@@ -510,7 +510,7 @@ exit:
 	return rlen;
 }
 
-static int blz_signal_cb(sd_bus_message* m, void* user, sd_bus_error* err)
+static int blz_notify_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 {
 	int r;
 	const void* ptr = NULL;
@@ -548,7 +548,7 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
 		"org.bluez", ch->path,
 		"org.freedesktop.DBus.Properties",
 		"PropertiesChanged",
-		blz_signal_cb, ch);
+		blz_notify_cb, ch);
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to notify");

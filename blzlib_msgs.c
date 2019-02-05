@@ -476,34 +476,34 @@ int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* 
 	/* interface name */
 	r = sd_bus_message_read_basic(m, 's', &str);
 	if (r < 0) {
-		LOG_ERR("BLZ signal msg read error");
+		LOG_ERR("BLZ error parse notify 1");
 		return -2;
 	}
 
 	/* ignore all other interfaces */
 	if (strcmp(str, "org.bluez.GattCharacteristic1") != 0) {
-		LOG_INF("BLZ signal interface %s ignored", str);
+		LOG_INF("BLZ notify interface %s ignored", str);
 		return 0;
 	}
 
 	/* enter array of dict entries */
 	r = sd_bus_message_enter_container(m, 'a', "{sv}");
 	if (r < 0) {
-		LOG_ERR("BLZ signal msg read error");
+		LOG_ERR("BLZ error parse notify 2");
 		return -2;
 	}
 
 	/* enter first element */
 	r = sd_bus_message_enter_container(m, 'e', "sv");
 	if (r < 0) {
-		LOG_ERR("BLZ signal msg read error");
+		LOG_ERR("BLZ error parse notify 3");
 		return -2;
 	}
 
 	/* property name */
 	r = sd_bus_message_read_basic(m, 's', &str);
 	if (r < 0) {
-		LOG_ERR("BLZ signal msg read error");
+		LOG_ERR("BLZ error parse notify 4");
 		return -2;
 	}
 
@@ -511,7 +511,7 @@ int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* 
 	if (strcmp(str, "Notifying") == 0) {
 		r = sd_bus_message_enter_container(m, 'v', "b");
 		if (r < 0) {
-			LOG_ERR("BLZ error parse dev 12");
+			LOG_ERR("BLZ error parse notify 5");
 			return -2;
 		}
 
@@ -519,7 +519,7 @@ int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* 
 		int b;
 		r = sd_bus_message_read_basic(m, 'b', &b);
 		if (r < 0) {
-			LOG_ERR("BLZ error parse dev 13");
+			LOG_ERR("BLZ error parse notify 6");
 			return -2;
 		}
 
@@ -528,20 +528,21 @@ int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* 
 		/* enter variant */
 		r = sd_bus_message_enter_container(m, 'v', "ay");
 		if (r < 0) {
-			LOG_ERR("BLZ signal msg read error");
+			LOG_ERR("BLZ error parse notify 7");
 			return -2;
 		}
 
 		/* get byte array */
 		r = sd_bus_message_read_array(m, 'y', ptr, len);
 		if (r < 0) {
-			LOG_ERR("BLZ signal msg read error");
+			LOG_ERR("BLZ error parse notify 8");
 			return -2;
 		}
 	} else {
-		LOG_INF("BLZ signal property %s ignored", str);
+		LOG_INF("BLZ notify property %s ignored", str);
 		return 0;
 	}
+
 	/* no need to exit containers as we stop parsing */
 	return r;
 }
