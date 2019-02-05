@@ -123,6 +123,7 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 			}
 			free(flags[i]);
 		}
+		free(flags);
 
 		return RETURN_FOUND;
 	} else {
@@ -130,6 +131,7 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 		for (int i = 0; flags != NULL && flags[i] != NULL; i++) {
 			free(flags[i]);
 		}
+		free(flags);
 	}
 
 	return r;
@@ -319,6 +321,7 @@ int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, v
 		for (int i = 0; dev.service_uuids != NULL && dev.service_uuids[i] != NULL; i++) {
 			free(dev.service_uuids[i]);
 		}
+		free(dev.service_uuids);
 	}
 	else if (eobj == OBJ_CHAR_COUNT && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		int* cnt = user;
