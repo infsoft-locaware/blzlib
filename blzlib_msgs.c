@@ -102,7 +102,7 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 	if (ch->uuid[0] == '\0' || strcmp(uuid, ch->uuid) == 0) {
 		/* save object path and UUID */
 		strncpy(ch->path, opath, DBUS_PATH_MAX_LEN);
-		if (ch->uuid[0] == '\0') { // TODO better check
+		if (ch->uuid[0] == '\0') {
 			strncpy(ch->uuid, uuid, UUID_STR_LEN);
 		}
 
