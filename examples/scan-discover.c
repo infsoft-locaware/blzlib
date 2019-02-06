@@ -21,7 +21,7 @@ static void discover(blz* blz, const char* mac)
 	char** uuids = blz_list_service_uuids(dev);
 
 	for (int i=0; uuids != NULL && uuids[i] != NULL; i++) {
-		LOG_INF("\t[service %s]", uuids[i]);
+		LOG_INF("\t[serv %s]", uuids[i]);
 	}
 
 	uuids = blz_list_char_uuids(dev);
