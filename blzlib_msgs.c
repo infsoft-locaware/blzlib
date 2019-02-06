@@ -33,39 +33,13 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 		//LOG_INF("Name %s", str);
 
 		if (strcmp(str, "UUID") == 0) {
-			r = sd_bus_message_enter_container(m, 'v', "s");
+			r = msg_read_variant(m, "s", &uuid);
 			if (r < 0) {
-				LOG_ERR("BLZ error parse char 3");
-				return r;
-			}
-
-			r = sd_bus_message_read_basic(m, 's', &uuid);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse char 4");
-				return r;
-			}
-
-			r = sd_bus_message_exit_container(m);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse char 5");
 				return r;
 			}
 		} else if (strcmp(str, "Flags") == 0) {
-			r = sd_bus_message_enter_container(m, 'v', "as");
+			r = msg_read_variant_strv(m, &flags);
 			if (r < 0) {
-				LOG_ERR("BLZ error parse char 6");
-				return r;
-			}
-
-			r = sd_bus_message_read_strv(m, &flags);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse char 7");
-				return r;
-			}
-
-			r = sd_bus_message_exit_container(m);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse char 8");
 				return r;
 			}
 		} else {
@@ -161,89 +135,32 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 		//LOG_INF("Name %s", str);
 
 		if (strcmp(str, "Name") == 0) {
-			r = sd_bus_message_enter_container(m, 'v', "s");
+			r = msg_read_variant(m, "s", &str);
 			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 3");
-				return r;
-			}
-
-			r = sd_bus_message_read_basic(m, 's', &str);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 4");
-				return r;
-			}
-
-			strncpy(dev->name, str, NAME_STR_LEN);
-
-			r = sd_bus_message_exit_container(m);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 5");
 				return r;
 			}
 		}
 		else if (strcmp(str, "Address") == 0) {
-			r = sd_bus_message_enter_container(m, 'v', "s");
+			r = msg_read_variant(m, "s", &str);
 			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 6");
 				return r;
 			}
-
-			r = sd_bus_message_read_basic(m, 's', &str);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 7");
-				return r;
-			}
-
 			strncpy(dev->mac, str, MAC_STR_LEN);
-
-			r = sd_bus_message_exit_container(m);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 8");
-				return r;
-			}
 		}
 		else if (strcmp(str, "UUIDs") == 0) {
-			r = sd_bus_message_enter_container(m, 'v', "as");
+			r = msg_read_variant_strv(m, &dev->service_uuids);
 			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 9");
-				return r;
-			}
-
-			/* need to free later */
-			r = sd_bus_message_read_strv(m, &dev->service_uuids);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 10");
-				return r;
-			}
-
-			r = sd_bus_message_exit_container(m);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 11");
 				return r;
 			}
 		}
 		else if (strcmp(str, "ServicesResolved") == 0) {
-			r = sd_bus_message_enter_container(m, 'v', "b");
-			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 12");
-				return -2;
-			}
-
 			/* note: bool in sd-dbus is expected to be int type */
 			int b;
-			r = sd_bus_message_read_basic(m, 'b', &b);
+			r = msg_read_variant(m, "b", &b);
 			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 13");
 				return r;
 			}
-
 			dev->services_resolved = b;
-
-			r = sd_bus_message_exit_container(m);
-			if (r < 0) {
-				LOG_ERR("BLZ error parse dev 14");
-				return r;
-			}
 		}
 		else {
 			r = sd_bus_message_skip(m, "v");
@@ -512,20 +429,12 @@ int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* 
 
 	/* ignore all except Value */
 	if (strcmp(str, "Notifying") == 0) {
-		r = sd_bus_message_enter_container(m, 'v', "b");
-		if (r < 0) {
-			LOG_ERR("BLZ error parse notify 5");
-			return -2;
-		}
-
 		/* note: bool in sd-dbus is expected to be int type */
 		int b;
-		r = sd_bus_message_read_basic(m, 'b', &b);
+		r = msg_read_variant(m, "b", &b);
 		if (r < 0) {
-			LOG_ERR("BLZ error parse notify 6");
 			return -2;
 		}
-
 		ch->notifying = b;
 	} else if (strcmp(str, "Value") == 0) {
 		/* enter variant */
@@ -589,6 +498,54 @@ int msg_append_property(sd_bus_message* m, const char* name, char type, const vo
 	r = sd_bus_message_close_container(m);
 	if (r < 0) {
 		LOG_ERR("BLZ failed to create property");
+		return r;
+	}
+
+	return r;
+}
+
+/** type can only be basic type, but as string */
+int msg_read_variant(sd_bus_message* m, char* type, void* dest)
+{
+	int r = sd_bus_message_enter_container(m, 'v', type);
+	if (r < 0) {
+		LOG_ERR("BLZ error parse variant 1");
+		return r;
+	}
+
+	r = sd_bus_message_read_basic(m, type[0], dest);
+	if (r < 0) {
+		LOG_ERR("BLZ error parse variant 2");
+		return r;
+	}
+
+	r = sd_bus_message_exit_container(m);
+	if (r < 0) {
+		LOG_ERR("BLZ error parse variant 3");
+		return r;
+	}
+
+	return r;
+}
+
+/** type can only be basic type, but as string */
+int msg_read_variant_strv(sd_bus_message* m, char*** dest)
+{
+	int r = sd_bus_message_enter_container(m, 'v', "as");
+	if (r < 0) {
+		LOG_ERR("BLZ error parse strv variant 1");
+		return r;
+	}
+
+	r = sd_bus_message_read_strv(m, dest);
+	if (r < 0) {
+		LOG_ERR("BLZ error parse strv variant 2");
+		return r;
+	}
+
+	r = sd_bus_message_exit_container(m);
+	if (r < 0) {
+		LOG_ERR("BLZ error parse strv variant 3");
 		return r;
 	}
 
