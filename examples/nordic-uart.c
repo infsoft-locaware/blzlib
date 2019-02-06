@@ -53,7 +53,6 @@ static int signal_handler(sd_event_source *s, const struct signalfd_siginfo *si,
 
 static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* user)
 {
-	//blz_char* wch = user;
 	int* wfd = user;
 	char buffer[21];
 
@@ -65,7 +64,6 @@ static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* use
 		return -1;
 	}
 
-	//blz_char_write(wch, buffer, len);
 	write(*wfd, buffer, len + 1);
 	return 0;
 }
@@ -79,31 +77,35 @@ static void log_handler(enum loglevel ll, const char *fmt, va_list ap)
 
 int main(int argc, char** argv)
 {
-	blz* blz = NULL;
-	blz_dev* dev = NULL;
-	blz_char* wch = NULL;
-	blz_char* rch = NULL;
-	sd_bus* sdbus = NULL;
+	blz* blz = NULL;	// blz context
+	blz_dev* dev = NULL;	// device we connect to
+	blz_char* wch = NULL;	// characteristic to write to
+	blz_char* rch = NULL;	// characteristic we read from
+	sd_bus* sdbus = NULL;	// sd-bus object for sd-event
 
 	if (argv[1] == NULL) {
 		LOG_ERR("Pass MAC address of device to connect to");
 		return EXIT_FAILURE;
 	}
 
+	/* blocking signals is necssary for the way we use sd_event */
 	signals_block();
 
+	/* Show how to use log handler, this is not necessary */
 	blz_set_log_handler(log_handler);
 
+	/* Initialize adapter and context */
 	blz = blz_init("hci0");
 	if (!blz)
 		goto exit;
 
-	//CF:D6:E8:4B:A0:D2 or C7:2D:19:62:10:C1
+	/* Connect to device */
 	LOG_INF("Connecting to %s...", argv[1]);
 	dev = blz_connect(blz, argv[1]);
 	if (!dev)
 		goto exit;
 
+	/* Find UUIDs we need */
 	wch = blz_get_char_from_uuid(dev, UUID_WRITE);
 	rch = blz_get_char_from_uuid(dev, UUID_READ);
 
@@ -112,10 +114,14 @@ int main(int argc, char** argv)
 		goto exit;
 	}
 
+	/* Start to get notifications from read characteristic */
 	bool b = blz_char_notify_start(rch, notify_handler);
 	if (!b)
 		goto exit;
 
+	/* Get a file descriptor we can use to write to the write characteristic.
+	 * Writing to a fd is more efficient than repeatedly using
+	 * blz_char_write(wch, buffer, len); */
 	int wfd = blz_char_write_fd_acquire(wch);
 	if (wfd < 0)
 		goto exit;
