@@ -193,7 +193,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 	return r;
 }
 
-int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, void* user)
+int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, void* user)
 {
 	char* intf;
 
@@ -204,7 +204,7 @@ int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, v
 		return r;
 	}
 
-	if (eobj == OBJ_CHAR && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+	if (act == MSG_CHAR_FIND && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		r = msg_parse_characteristic1(m, opath, user);
 		if (r < 0) {
 			LOG_ERR("BLZ error in parse_msg_char_properties");
@@ -213,14 +213,14 @@ int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, v
 			return r;
 		}
 	}
-	else if (eobj == OBJ_DEVICE && strcmp(intf, "org.bluez.Device1") == 0) {
+	else if (act == MSG_DEVICE && strcmp(intf, "org.bluez.Device1") == 0) {
 		r = msg_parse_device1(m, opath, user);
 		if (r < 0) {
 			LOG_ERR("BLZ error in parse_msg_device_properties");
 			return r;
 		}
 	}
-	else if (eobj == OBJ_DEVICE_SCAN && strcmp(intf, "org.bluez.Device1") == 0) {
+	else if (act == MSG_DEVICE_SCAN && strcmp(intf, "org.bluez.Device1") == 0) {
 		blz_dev dev; // temporary device
 		r = msg_parse_device1(m, opath, &dev);
 		if (r < 0) {
@@ -240,7 +240,7 @@ int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, v
 		}
 		free(dev.service_uuids);
 	}
-	else if (eobj == OBJ_CHAR_COUNT && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+	else if (act == MSG_CHAR_COUNT && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		int* cnt = user;
 		(*cnt)++;
 		r = sd_bus_message_skip(m, "a{sv}");
@@ -249,7 +249,7 @@ int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, v
 			return r;
 		}
 	}
-	else if (eobj == OBJ_CHARS_ALL && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+	else if (act == MSG_CHARS_ALL && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		blz_dev* dev = user;
 		blz_char ch; // temporary char
 		r = msg_parse_characteristic1(m, opath, &ch);
@@ -273,7 +273,7 @@ int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, v
 	return r;
 }
 
-static int msg_parse_interfaces(sd_bus_message* m, enum e_obj eobj, const char* opath, void* user)
+static int msg_parse_interfaces(sd_bus_message* m, enum msg_act act, const char* opath, void* user)
 {
 	/* enter array of interface names with array of properties */
 	int r = sd_bus_message_enter_container(m, 'a', "{sa{sv}}");
@@ -285,7 +285,7 @@ static int msg_parse_interfaces(sd_bus_message* m, enum e_obj eobj, const char* 
 	/* enter next dict entry */
 	while ((r = sd_bus_message_enter_container(m, 'e', "sa{sv}")) > 0)
 	{
-		r = msg_parse_interface(m, eobj, opath, user);
+		r = msg_parse_interface(m, act, opath, user);
 		if (r < 0) {
 			LOG_ERR("BLZ error in parse_msg_one_interface");
 			return r;
@@ -315,7 +315,7 @@ static int msg_parse_interfaces(sd_bus_message* m, enum e_obj eobj, const char* 
 	return r;
 }
 
-int msg_parse_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user)
+int msg_parse_object(sd_bus_message* m, const char* match_path, enum msg_act act, void* user)
 {
 	const char* opath;
 
@@ -329,7 +329,7 @@ int msg_parse_object(sd_bus_message* m, const char* match_path, enum e_obj eobj,
 	/* check if it is below our own device path */
 	if (strncmp(opath, match_path, strlen(match_path)) == 0) {
 		/* parse array of interfaces */
-		r = msg_parse_interfaces(m, eobj, opath, user);
+		r = msg_parse_interfaces(m, act, opath, user);
 		if (r < 0) {
 			LOG_ERR("BLZ error in parse_msg_interfaces");
 			return r;
@@ -348,7 +348,7 @@ int msg_parse_object(sd_bus_message* m, const char* match_path, enum e_obj eobj,
 	return r;
 }
 
-int msg_parse_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user)
+int msg_parse_objects(sd_bus_message* m, const char* match_path, enum msg_act act, void* user)
 {
 	/* enter array of objects */
 	int r = sd_bus_message_enter_container(m, 'a', "{oa{sa{sv}}}");
@@ -360,7 +360,7 @@ int msg_parse_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 	/* enter next dict/object */
 	while ((r = sd_bus_message_enter_container(m, 'e', "oa{sa{sv}}")) > 0)
 	{
-		r = msg_parse_object(m, match_path, eobj, user);
+		r = msg_parse_object(m, match_path, act, user);
 		if (r < 0) {
 			LOG_ERR("BLZ error in parse_msg_one_object");
 			return r;

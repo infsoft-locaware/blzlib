@@ -88,7 +88,7 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb)
 		goto exit;
 	}
 
-	r = msg_parse_objects(reply, ctx->path, OBJ_DEVICE_SCAN, ctx);
+	r = msg_parse_objects(reply, ctx->path, MSG_DEVICE_SCAN, ctx);
 	/* error logging done in function */
 
 exit:
@@ -107,7 +107,7 @@ static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	}
 
 	/* error logging done in function */
-	return msg_parse_object(m, ctx->path, OBJ_DEVICE_SCAN, ctx);
+	return msg_parse_object(m, ctx->path, MSG_DEVICE_SCAN, ctx);
 }
 
 bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
@@ -175,7 +175,7 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	}
 
 	/* error logging done in function */
-	msg_parse_interface(m, OBJ_DEVICE, NULL, dev);
+	msg_parse_interface(m, MSG_DEVICE, NULL, dev);
 	return 0;
 }
 
@@ -436,7 +436,7 @@ static bool find_char_by_uuid(blz_char* ch)
 		goto exit;
 	}
 
-	r = msg_parse_objects(reply, ch->dev->path, OBJ_CHAR, ch);
+	r = msg_parse_objects(reply, ch->dev->path, MSG_CHAR_FIND, ch);
 	/* error logging done in function */
 
 exit:
@@ -464,7 +464,7 @@ char** blz_list_char_uuids(blz_dev* dev)
 
 	/* first count how many characteristics there are and alloc space */
 	int cnt = 0;
-	r = msg_parse_objects(reply, dev->path, OBJ_CHAR_COUNT, &cnt);
+	r = msg_parse_objects(reply, dev->path, MSG_CHAR_COUNT, &cnt);
 	if (r < 0) {
 		goto exit;
 	}
@@ -479,7 +479,7 @@ char** blz_list_char_uuids(blz_dev* dev)
 
 	/* now parse all characteristics data */
 	sd_bus_message_rewind(reply, true);
-	r = msg_parse_objects(reply, dev->path, OBJ_CHARS_ALL, dev);
+	r = msg_parse_objects(reply, dev->path, MSG_CHARS_ALL, dev);
 	/* error logging done in function */
 
 exit:

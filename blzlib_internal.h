@@ -47,11 +47,12 @@ struct blz_char {
 	bool			notifying;
 };
 
-enum e_obj { OBJ_CHAR, OBJ_DEVICE, OBJ_DEVICE_SCAN, OBJ_CHAR_COUNT, OBJ_CHARS_ALL };
+/* actions that can be done on message parsing for objects and interfaces */
+enum msg_act { MSG_CHAR_FIND, MSG_DEVICE, MSG_DEVICE_SCAN, MSG_CHAR_COUNT, MSG_CHARS_ALL };
 
-int msg_parse_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
-int msg_parse_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
-int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, void* user);
+int msg_parse_objects(sd_bus_message* m, const char* match_path, enum msg_act act, void* user);
+int msg_parse_object(sd_bus_message* m, const char* match_path, enum msg_act act, void* user);
+int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, void* user);
 int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* len);
 int msg_append_property(sd_bus_message* m, const char* name, char type, const void* value);
 int msg_read_variant(sd_bus_message* m, char* type, void* dest);
