@@ -195,7 +195,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 
 int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, void* user)
 {
-	char* intf;
+	const char* intf;
 
 	/* interface name */
 	int r = sd_bus_message_read_basic(m, 's', &intf);
@@ -206,25 +206,14 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 
 	if (act == MSG_CHAR_FIND && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		r = msg_parse_characteristic1(m, opath, user);
-		if (r < 0) {
-			LOG_ERR("BLZ error in parse_msg_char_properties");
-			return r;
-		} else if (r == RETURN_FOUND) {
-			return r;
-		}
 	}
 	else if (act == MSG_DEVICE && strcmp(intf, "org.bluez.Device1") == 0) {
 		r = msg_parse_device1(m, opath, user);
-		if (r < 0) {
-			LOG_ERR("BLZ error in parse_msg_device_properties");
-			return r;
-		}
 	}
 	else if (act == MSG_DEVICE_SCAN && strcmp(intf, "org.bluez.Device1") == 0) {
 		blz_dev dev; // temporary device
 		r = msg_parse_device1(m, opath, &dev);
 		if (r < 0) {
-			LOG_ERR("BLZ error in parse_msg_device_properties");
 			return r;
 		}
 
@@ -246,7 +235,6 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		r = sd_bus_message_skip(m, "a{sv}");
 		if (r < 0) {
 			LOG_ERR("BLZ error parse 1intf 2");
-			return r;
 		}
 	}
 	else if (act == MSG_CHARS_ALL && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
@@ -254,7 +242,6 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		blz_char ch; // temporary char
 		r = msg_parse_characteristic1(m, opath, &ch);
 		if (r < 0) {
-			LOG_ERR("BLZ error in parse_msg_char_properties");
 			return r;
 		}
 		/* copy UUID */
@@ -267,7 +254,6 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		r = sd_bus_message_skip(m, "a{sv}");
 		if (r < 0) {
 			LOG_ERR("BLZ error parse 1intf 3");
-			return r;
 		}
 	}
 	return r;
