@@ -53,5 +53,6 @@ int msg_parse_objects(sd_bus_message* m, const char* match_path, enum e_obj eobj
 int msg_parse_object(sd_bus_message* m, const char* match_path, enum e_obj eobj, void* user);
 int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, void* user);
 int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* len);
+int msg_append_property(sd_bus_message* m, const char* name, char type, const void* value);
 
 #endif

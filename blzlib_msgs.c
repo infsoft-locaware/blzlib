@@ -549,3 +549,48 @@ int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* 
 	/* no need to exit containers as we stop parsing */
 	return r;
 }
+
+int msg_append_property(sd_bus_message* m, const char* name, char type, const void* value)
+{
+	/* open dict */
+	int r = sd_bus_message_open_container(m, 'e', "sv");
+	if (r < 0) {
+		LOG_ERR("BLZ failed to create property");
+		return r;
+	}
+
+	r = sd_bus_message_append_basic(m, 's', name);
+	if (r < 0) {
+		LOG_ERR("BLZ failed to create property");
+		return r;
+	}
+
+	/* open variant */
+	r = sd_bus_message_open_container(m, 'v', "s");
+	if (r < 0) {
+		LOG_ERR("BLZ failed to create property");
+		return r;
+	}
+
+	r = sd_bus_message_append_basic(m, type, value);
+	if (r < 0) {
+		LOG_ERR("BLZ failed to create property");
+		return r;
+	}
+
+	/* close variant */
+	r = sd_bus_message_close_container(m);
+	if (r < 0) {
+		LOG_ERR("BLZ failed to create property");
+		return r;
+	}
+
+	/* close dict */
+	r = sd_bus_message_close_container(m);
+	if (r < 0) {
+		LOG_ERR("BLZ failed to create property");
+		return r;
+	}
+
+	return r;
+}

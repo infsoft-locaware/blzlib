@@ -179,12 +179,103 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	return 0;
 }
 
+static int blz_connect_known(blz_dev* dev, const char* macstr)
+{
+	int r;
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+
+	r = sd_bus_call_method(dev->ctx->bus,
+		"org.bluez", dev->path,
+		"org.bluez.Device1",
+		"Connect",
+		&error, NULL, "");
+
+	if (r < 0) {
+		LOG_ERR("BLZ connect failed: %s", error.message);
+	}
+
+	sd_bus_error_free(&error);
+	return r;
+}
+
+static int blz_connect_new(blz_dev* dev, const char* macstr)
+{
+	int r;
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	sd_bus_message* call = NULL;
+	sd_bus_message* reply = NULL;
+	char* opath;
+
+	r = sd_bus_message_new_method_call(dev->ctx->bus, &call,
+		"org.bluez", dev->ctx->path,
+		"org.bluez.Adapter1",
+		"ConnectDevice");
+
+	if (r < 0) {
+		LOG_ERR("BLZ connect new failed to create message");
+		goto exit;
+	}
+
+	/* open array */
+	r = sd_bus_message_open_container(call, 'a', "{sv}");
+	if (r < 0) {
+		LOG_ERR("BLZ connect new failed to create message");
+		goto exit;
+	}
+
+	r = msg_append_property(call, "Address", 's', macstr);
+	if (r < 0) {
+		goto exit;
+	}
+
+	r = msg_append_property(call, "AddressType", 's', "random"); // "public"
+	if (r < 0) {
+		goto exit;
+	}
+
+	/* close array */
+	r = sd_bus_message_close_container(call);
+	if (r < 0) {
+		LOG_ERR("BLZ connect new failed to create message");
+		goto exit;
+	}
+
+	/* call ConnectDevice, it is only supported from Bluez 5.49 on */
+	r = sd_bus_call(dev->ctx->bus, call, 0, &error, &reply);
+	if (r < 0) {
+		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_METHOD)) {
+			LOG_NOTI("BLZ connect new failed: Bluez < 5.49 (with -E flag) doesn't support ConnectDevice");
+		} else {
+			LOG_ERR("BLZ connect new failed: %s", error.message);
+		}
+		goto exit;
+	}
+
+	r = sd_bus_message_read_basic(reply, 'o', &opath);
+	if (r < 0) {
+		LOG_ERR("BLZ connect new failed to read result: %s", error.message);
+		goto exit;
+	}
+
+	if (strcmp(opath, dev->path) != 0) {
+		LOG_ERR("BLZ connect new device paths don't match (%s %s)",
+			opath, dev->path);
+		r = -1;
+	}
+
+exit:
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(call);
+	sd_bus_message_unref(reply);
+	return r;
+}
+
 blz_dev* blz_connect(blz* ctx, const char* macstr)
 {
 	int r;
 	uint8_t mac[6];
 	sd_bus_error error = SD_BUS_ERROR_NULL;
-	int alread_connected; /* note: bool in sd-dbus is expected to be int type */
+	int conn_status = -2; // invalid
 
 	struct blz_dev* dev = calloc(1, sizeof(struct blz_dev));
 	if (dev == NULL) {
@@ -214,19 +305,22 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 			dev->path,
 			"org.bluez.Device1",
 			"Connected",
-			&error, 'b', &alread_connected);
+			&error, 'b', &conn_status);
 
 	if (r < 0) {
 		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_OBJECT)) {
-			LOG_ERR("Device %s not known", macstr);
+			/* device is unknown, mark for ConnectDevice API below */
+			conn_status = -1;
 		} else {
 			LOG_ERR("BLZ failed to get connected: %s", error.message);
+			goto exit;
 		}
-		goto exit;
 	}
 
-	if (alread_connected) {
+	if (conn_status == 1) {
 		LOG_NOTI("Device %s already was connected", macstr);
+		goto exit;
+	} else if (conn_status != 0 && conn_status != -1) {
 		goto exit;
 	}
 
@@ -242,14 +336,16 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 		goto exit;
 	}
 
-	r = sd_bus_call_method(ctx->bus,
-		"org.bluez", dev->path,
-		"org.bluez.Device1",
-		"Connect",
-		&error, NULL, "");
+	/* if the device is already known in the DBus object hierarchy, connect
+	 * by the normal Connect API, if not try using the new (Bluez 5.49)
+	 * ConnectDevice API for unknown (not yet discovered) devices */
+	if (conn_status == 0) {
+		r = blz_connect_known(dev, macstr);
+	} else if (conn_status == -1) {
+		r = blz_connect_new(dev, macstr);
+	}
 
 	if (r < 0) {
-		LOG_ERR("BLZ failed to connect: %s", error.message);
 		goto exit;
 	}
 
