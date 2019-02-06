@@ -139,6 +139,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 			if (r < 0) {
 				return r;
 			}
+			strncpy(dev->name, str, NAME_STR_LEN);
 		}
 		else if (strcmp(str, "Address") == 0) {
 			r = msg_read_variant(m, "s", &str);
