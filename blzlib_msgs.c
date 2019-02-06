@@ -282,10 +282,7 @@ static int msg_parse_interfaces(sd_bus_message* m, enum msg_act act, const char*
 	while ((r = sd_bus_message_enter_container(m, 'e', "sa{sv}")) > 0)
 	{
 		r = msg_parse_interface(m, act, opath, user);
-		if (r < 0) {
-			LOG_ERR("BLZ error in parse_msg_one_interface");
-			return r;
-		} else if (r == RETURN_FOUND) {
+		if (r < 0 || r == RETURN_FOUND) {
 			return r;
 		}
 
@@ -326,18 +323,11 @@ int msg_parse_object(sd_bus_message* m, const char* match_path, enum msg_act act
 	if (strncmp(opath, match_path, strlen(match_path)) == 0) {
 		/* parse array of interfaces */
 		r = msg_parse_interfaces(m, act, opath, user);
-		if (r < 0) {
-			LOG_ERR("BLZ error in parse_msg_interfaces");
-			return r;
-		} else if (r == RETURN_FOUND) {
-			return r;
-		}
 	} else {
 		/* ignore */
 		r = sd_bus_message_skip(m, "a{sa{sv}}");
 		if (r < 0) {
 			LOG_ERR("BLZ error parse 1obj 2");
-			return r;
 		}
 	}
 
@@ -357,10 +347,7 @@ int msg_parse_objects(sd_bus_message* m, const char* match_path, enum msg_act ac
 	while ((r = sd_bus_message_enter_container(m, 'e', "oa{sa{sv}}")) > 0)
 	{
 		r = msg_parse_object(m, match_path, act, user);
-		if (r < 0) {
-			LOG_ERR("BLZ error in parse_msg_one_object");
-			return r;
-		} else if (r == RETURN_FOUND) {
+		if (r < 0 || r == RETURN_FOUND) {
 			return r;
 		}
 
