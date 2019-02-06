@@ -260,6 +260,7 @@ int msg_parse_interface(sd_bus_message* m, enum e_obj eobj, const char* opath, v
 		/* copy UUID */
 		dev->char_uuids[dev->chars_idx] = strdup(ch.uuid);
 		dev->chars_idx++;
+		return 0; // override RETURN_FOUND this would stop the loop
 	}
 	else {
 		/* unknown interface or action */
