@@ -205,13 +205,43 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 	}
 
 	if (act == MSG_CHAR_FIND && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+		/* find char by UUID, returns RETURN_FOUND if found, user
+		 * points to a blz_char where the UUID to look for is filled */
 		r = msg_parse_characteristic1(m, opath, user);
 	}
+	else if (act == MSG_CHAR_COUNT && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+		/* just count the times the GattCharacteristic1 interface was
+		 * found, user just is an int pointer */
+		int* cnt = user;
+		(*cnt)++;
+		r = sd_bus_message_skip(m, "a{sv}");
+		if (r < 0) {
+			LOG_ERR("BLZ error parse 1intf 2");
+		}
+	}
+	else if (act == MSG_CHARS_ALL && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+		/* get UUIDs from all characteristics. user points to the device
+		 * where enough space for them has already been allocated */
+		blz_dev* dev = user;
+		blz_char ch; // temporary char
+		r = msg_parse_characteristic1(m, opath, &ch);
+		if (r < 0) {
+			return r;
+		}
+		/* copy UUID */
+		dev->char_uuids[dev->chars_idx] = strdup(ch.uuid);
+		dev->chars_idx++;
+		return 0; // override RETURN_FOUND this would stop the loop
+	}
 	else if (act == MSG_DEVICE && strcmp(intf, "org.bluez.Device1") == 0) {
+		/* parse device properties, user points to device */
 		r = msg_parse_device1(m, opath, user);
 	}
 	else if (act == MSG_DEVICE_SCAN && strcmp(intf, "org.bluez.Device1") == 0) {
-		blz_dev dev; // temporary device
+		/* used in scan callback. user points to a blz* where the scan_cb
+		 * can be found. create a temporary device, parse all info into
+		 * it and then call callback */
+		blz_dev dev;
 		r = msg_parse_device1(m, opath, &dev);
 		if (r < 0) {
 			return r;
@@ -223,31 +253,11 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 			ctx->scan_cb(dev.mac, dev.name, dev.service_uuids);
 		}
 
-		/* free uuids */
+		/* free uuids of temporary device */
 		for (int i = 0; dev.service_uuids != NULL && dev.service_uuids[i] != NULL; i++) {
 			free(dev.service_uuids[i]);
 		}
 		free(dev.service_uuids);
-	}
-	else if (act == MSG_CHAR_COUNT && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
-		int* cnt = user;
-		(*cnt)++;
-		r = sd_bus_message_skip(m, "a{sv}");
-		if (r < 0) {
-			LOG_ERR("BLZ error parse 1intf 2");
-		}
-	}
-	else if (act == MSG_CHARS_ALL && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
-		blz_dev* dev = user;
-		blz_char ch; // temporary char
-		r = msg_parse_characteristic1(m, opath, &ch);
-		if (r < 0) {
-			return r;
-		}
-		/* copy UUID */
-		dev->char_uuids[dev->chars_idx] = strdup(ch.uuid);
-		dev->chars_idx++;
-		return 0; // override RETURN_FOUND this would stop the loop
 	}
 	else {
 		/* unknown interface or action */
