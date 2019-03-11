@@ -22,6 +22,7 @@ struct blz_dev {
 	char			mac[MAC_STR_LEN];
 	char			name[NAME_STR_LEN];
 	sd_bus_slot*		connect_slot;
+	bool			connected;
 	bool			services_resolved;
 	char**			service_uuids;
 	char**			char_uuids;

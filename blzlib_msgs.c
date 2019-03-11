@@ -170,6 +170,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 			if (r < 0) {
 				return r;
 			}
+			dev->connected = b;
 			if (dev->disconnect_cb && !b) {
 				dev->disconnect_cb();
 			}

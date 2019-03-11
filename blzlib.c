@@ -284,6 +284,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 	}
 
 	dev->ctx = ctx;
+	dev->connected = false;
 	dev->services_resolved = false;
 	dev->disconnect_cb = cb;
 
@@ -320,6 +321,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 
 	if (conn_status == 1) {
 		LOG_NOTI("Device %s already was connected", macstr);
+		dev->connected = true;
 		goto exit;
 	} else if (conn_status != 0 && conn_status != -1) {
 		goto exit;
@@ -356,6 +358,8 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 	r = blz_loop_timeout(ctx, &dev->services_resolved, 5000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
+	} else {
+		dev->connected = true;
 	}
 
 exit:
@@ -391,20 +395,22 @@ void blz_disconnect(blz_dev* dev)
 	if (!dev)
 		return;
 
-	sd_bus_error error = SD_BUS_ERROR_NULL;
-	int r;
+	if (dev->connected) {
+		sd_bus_error error = SD_BUS_ERROR_NULL;
+		int r;
 
-	r = sd_bus_call_method(dev->ctx->bus,
-		"org.bluez", dev->path,
-		"org.bluez.Device1",
-		"Disconnect",
-		&error, NULL, "");
+		r = sd_bus_call_method(dev->ctx->bus,
+			"org.bluez", dev->path,
+			"org.bluez.Device1",
+			"Disconnect",
+			&error, NULL, "");
 
-	if (r < 0) {
-		LOG_ERR("BLZ failed to disconnect: %s", error.message);
+		if (r < 0) {
+			LOG_ERR("BLZ failed to disconnect: %s", error.message);
+		}
+
+		sd_bus_error_free(&error);
 	}
-
-	sd_bus_error_free(&error);
 
 	dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
 
