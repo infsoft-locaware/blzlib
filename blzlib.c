@@ -270,7 +270,7 @@ exit:
 	return r;
 }
 
-blz_dev* blz_connect(blz* ctx, const char* macstr)
+blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 {
 	int r;
 	uint8_t mac[6];
@@ -285,6 +285,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 
 	dev->ctx = ctx;
 	dev->services_resolved = false;
+	dev->disconnect_cb = cb;
 
 	/* create device path based on MAC address */
 	blz_string_to_mac(macstr, mac);
@@ -359,7 +360,6 @@ blz_dev* blz_connect(blz* ctx, const char* macstr)
 
 exit:
 	sd_bus_error_free(&error);
-	dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
 	if (r < 0) {
 		free(dev);
 		return NULL;
@@ -405,6 +405,8 @@ void blz_disconnect(blz_dev* dev)
 	}
 
 	sd_bus_error_free(&error);
+
+	dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
 
 	/* free */
 	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL; i++) {

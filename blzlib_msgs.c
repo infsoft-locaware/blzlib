@@ -163,6 +163,17 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 			}
 			dev->services_resolved = b;
 		}
+		else if (strcmp(str, "Connected") == 0) {
+			/* note: bool in sd-dbus is expected to be int type */
+			int b;
+			r = msg_read_variant(m, "b", &b);
+			if (r < 0) {
+				return r;
+			}
+			if (dev->disconnect_cb && !b) {
+				dev->disconnect_cb();
+			}
+		}
 		else {
 			r = sd_bus_message_skip(m, "v");
 			if (r < 0) {

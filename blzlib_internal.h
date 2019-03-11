@@ -26,6 +26,7 @@ struct blz_dev {
 	char**			service_uuids;
 	char**			char_uuids;
 	size_t			chars_idx;
+	blz_disconn_handler_t	disconnect_cb;
 };
 
 /* Characteristic Flags (Characteristic Properties bit field) */

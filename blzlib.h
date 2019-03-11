@@ -15,6 +15,7 @@ typedef struct blz_char blz_char;
 
 typedef void (*blz_notify_handler_t)(const char* data, size_t len, blz_char* ch);
 typedef void (*blz_scan_handler_t)(const char* mac, const char* name, char** uuids);
+typedef void (*blz_disconn_handler_t)(void);
 
 blz* blz_init(const char* dev);
 void blz_fini(blz* ctx);
@@ -23,7 +24,7 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_start(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_stop(blz* ctx);
 
-blz_dev* blz_connect(blz* ctx, const char* macstr);
+blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb);
 /* this frees dev */
 void blz_disconnect(blz_dev* dev);
 
