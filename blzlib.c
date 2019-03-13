@@ -286,7 +286,6 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 	dev->ctx = ctx;
 	dev->connected = false;
 	dev->services_resolved = false;
-	dev->disconnect_cb = cb;
 
 	/* create device path based on MAC address */
 	blz_string_to_mac(macstr, mac);
@@ -321,13 +320,24 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 
 	if (conn_status == 1) {
 		LOG_NOTI("Device %s already was connected", macstr);
-		dev->connected = true;
-		goto exit;
+		/* get ServicesResolved status */
+		int sr;
+		r = sd_bus_get_property_trivial(dev->ctx->bus,
+			"org.bluez",
+			dev->path,
+			"org.bluez.Device1",
+			"ServicesResolved",
+			&error, 'b', &sr);
+		if (r < 0) {
+			LOG_ERR("BLZ failed to get ServicesResolved: %s", error.message);
+			goto exit;
+		}
+		dev->services_resolved = sr;
 	} else if (conn_status != 0 && conn_status != -1) {
 		goto exit;
 	}
 
-	/* connect signal for ServicesResolved */
+	/* connect signal for device properties changed */
 	r = sd_bus_match_signal(ctx->bus, &dev->connect_slot,
 		"org.bluez", dev->path,
 		"org.freedesktop.DBus.Properties",
@@ -360,6 +370,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
 	} else {
 		dev->connected = true;
+		dev->disconnect_cb = cb;
 	}
 
 exit:
@@ -392,8 +403,13 @@ char** blz_list_service_uuids(blz_dev* dev)
 
 void blz_disconnect(blz_dev* dev)
 {
-	if (!dev)
+	if (!dev) {
 		return;
+	}
+
+	if (dev->connect_slot) {
+		dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
+	}
 
 	if (dev->connected) {
 		sd_bus_error error = SD_BUS_ERROR_NULL;
@@ -411,8 +427,6 @@ void blz_disconnect(blz_dev* dev)
 
 		sd_bus_error_free(&error);
 	}
-
-	dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
 
 	/* free */
 	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL; i++) {
