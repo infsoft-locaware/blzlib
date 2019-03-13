@@ -62,9 +62,9 @@ blz* blz_init(const char* dev)
 
 void blz_fini(blz* ctx)
 {
-	if (ctx == NULL)
+	if (ctx == NULL) {
 		return;
-
+	}
 	sd_bus_unref(ctx->bus);
 	free(ctx);
 }
@@ -704,8 +704,9 @@ bool blz_char_notify_stop(blz_char* ch)
 	sd_bus_message* reply = NULL;
 	int r;
 
-	if (ch == NULL || ch->notify_slot == NULL)
+	if (ch == NULL || ch->notify_slot == NULL) {
 		return false;
+	}
 
 	r = sd_bus_call_method(ch->ctx->bus,
 		"org.bluez", ch->path,
