@@ -1,13 +1,13 @@
 # blzlib - Bluez BLE GATT Library #
 
-`blzlib` is a library for acessing BLE GATT Services thru Bluez via its D-Bus API on Linux. It can be used as an easy interface to GATT Services and Characteristics without having to worry about the underlying D-Bus API of Bluez.
+`blzlib` is a C library for acessing BLE GATT Services thru Bluez via its D-Bus API on Linux. It can be used as an easy interface to GATT Services and Characteristics without having to worry about the underlying D-Bus API of Bluez.
 
 
 ## Dependencies ##
 
-* Bluez version 5.49 and higher
+* [Bluez](http://www.bluez.org/) version 5.49 and higher
 
-* libsystemd: blzlib uses systemds excellent `sd-bus` API to interface with D-Bus.
+* libsystemd: blzlib uses systemds [sd-bus](http://0pointer.net/blog/the-new-sd-bus-api-of-systemd.html) API to interface with D-Bus.
 
       sudo apt install libsystemd-dev
 
@@ -32,14 +32,14 @@ CMake:
 
 ## Status ##
     
-Currently supported:
+Supported:
     
   * Discovery / Scanning of remote BLE devices
-  * Reading GATT Characteristics
+  * Read GATT Characteristics
   * Notify of GATT Characteristics
-  * Writing GATT Characteristic
-  * Efficient writing of GATT Characteristics by file descriptor (write-without-respose)
+  * Write GATT Characteristics
+  * Efficient write of GATT Characteristics by file descriptor (write-without-respose)
 
 TODO
 
-  * Extend for creating local GATT Services and Characteristics to be accessed by remote devices
+  * Create local GATT Services and Characteristics to be accessed by remote devices (Server side)
