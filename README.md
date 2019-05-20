@@ -1,6 +1,6 @@
 # blzlib - Bluez BLE GATT Library #
 
-`blzlib` is a C library for acessing BLE GATT Services thru Bluez via its D-Bus API on Linux. It can be used as an easy interface to GATT Services and Characteristics without having to worry about the underlying D-Bus API of Bluez.
+`blzlib` is a C library for acessing BLE GATT Services thru Bluez via its D-Bus API on Linux. It can be used as an easy interface to GATT Services and Characteristics without having to worry about the underlying D-Bus API of Bluez. It is licensed under the LGPLv3.
 
 
 ## Dependencies ##
