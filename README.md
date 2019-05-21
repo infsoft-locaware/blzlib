@@ -1,6 +1,6 @@
 # blzlib - Bluez BLE GATT Library #
 
-`blzlib` is a C library providing an easy interface to acess Bluetooth Low Energy (BLE) Generic Attribute Profile (GATT) Services and Characteristics on Linux. It interfaces with the [Bluez](http://www.bluez.org/) Bluetooth daemon on Linux via its D-Bus API. It depends on `libsystemd` (sd-bus) and is licensed under the [LGPLv3](LICENSE.txt).
+`blzlib` is a C library providing an easy interface to acess Bluetooth Low Energy (BLE) Generic Attribute Profile (GATT) Services and Characteristics on Linux. It interfaces with the Bluez Bluetooth daemon on Linux via its D-Bus API. It depends on `libsystemd` (sd-bus) and is licensed under the [LGPLv3](LICENSE.txt).
 
 Currently the following features are supported:
 
@@ -8,8 +8,8 @@ Currently the following features are supported:
   * Discovery of services and characteristics
   * Read GATT characteristics
   * Notify of GATT characteristics (value change notifications)
-  * Write GATT Characteristics
-  * Efficient write of GATT Characteristics by file descriptor (write-without-respose)
+  * Write GATT characteristics
+  * Efficient write of GATT characteristics by file descriptor (write-without-respose)
 
 ## Dependencies ##
 
