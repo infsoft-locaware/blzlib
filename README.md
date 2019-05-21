@@ -1,13 +1,21 @@
-# blzlib - Bluez BLE GATT Library #
+# blzlib - Bluetooth GATT Library for Linux / Bluez #
 
-`blzlib` is a C library for acessing BLE GATT Services thru Bluez via its D-Bus API on Linux. It can be used as an easy interface to GATT Services and Characteristics without having to worry about the underlying D-Bus API of Bluez. It is licensed under the LGPLv3.
+`blzlib` is a C library providing an easy interface to acess Bluetooth Low Energy (BLE) Generic Attribute Profile (GATT) Services and Characteristics on Linux. It interfaces with the Bluez Bluetooth daemon on Linux via its D-Bus API. It depends on `libsystemd` (sd-bus) and is licensed under the [LGPLv3](LICENSE.txt).
 
+Currently the following features are supported:
+
+  * Discovery / Scanning of nearby BLE devices
+  * Discovery of services and characteristics
+  * Read GATT characteristics
+  * Notify of GATT characteristics (value change notifications)
+  * Write GATT characteristics
+  * Efficient write of GATT characteristics by file descriptor (write-without-respose)
 
 ## Dependencies ##
 
 * [Bluez](http://www.bluez.org/) version 5.49 and higher
 
-* libsystemd: blzlib uses systemds [sd-bus](http://0pointer.net/blog/the-new-sd-bus-api-of-systemd.html) API to interface with D-Bus.
+* libsystemd: blzlib uses [systemds](https://www.freedesktop.org/wiki/Software/systemd/) [sd-bus](http://0pointer.net/blog/the-new-sd-bus-api-of-systemd.html) library to access the [D-Bus](https://www.freedesktop.org/wiki/Software/dbus/) API of Bluez.
 
       sudo apt install libsystemd-dev
 
@@ -30,16 +38,15 @@ CMake:
     make
 
 
-## Status ##
-    
-Supported:
-    
-  * Discovery / Scanning of remote BLE devices
-  * Read GATT Characteristics
-  * Notify of GATT Characteristics
-  * Write GATT Characteristics
-  * Efficient write of GATT Characteristics by file descriptor (write-without-respose)
+## Examples ##
 
-TODO
+Here is a simple example how to write a characteristic:
 
-  * Create local GATT Services and Characteristics to be accessed by remote devices (Server side)
+```
+blz* blz = blz_init("hci0");
+blz_dev* dev = blz_connect(blz, "00:11:22:33:44:55", NULL);
+blz_char* ch = blz_get_char_from_uuid(dev, "6e400002-b5a3-f393-e0a9-e50e24dcca9e");
+blz_char_write(ch, "test", 4);
+```
+
+More real-life examples can be found in the [examples/](examples/) directory.
