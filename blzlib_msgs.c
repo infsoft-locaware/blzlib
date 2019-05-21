@@ -243,7 +243,7 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		/* get UUIDs from all characteristics. user points to the device
 		 * where enough space for them has already been allocated */
 		blz_dev* dev = user;
-		blz_char ch; // temporary char
+		blz_char ch = {0}; // temporary char
 		r = msg_parse_characteristic1(m, opath, &ch);
 		if (r < 0) {
 			return r;
@@ -261,7 +261,7 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		/* used in scan callback. user points to a blz* where the scan_cb
 		 * can be found. create a temporary device, parse all info into
 		 * it and then call callback */
-		blz_dev dev;
+		blz_dev dev = {0};
 		r = msg_parse_device1(m, opath, &dev);
 		if (r < 0) {
 			return r;
