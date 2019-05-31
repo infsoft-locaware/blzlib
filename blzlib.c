@@ -545,7 +545,7 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 	return ch;
 }
 
-bool blz_char_write(blz_char* ch, const char* data, size_t len)
+bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* call = NULL;
@@ -598,7 +598,7 @@ exit:
 	return r >= 0;
 }
 
-int blz_char_read(blz_char* ch, char* data, size_t len)
+int blz_char_read(blz_char* ch, uint8_t* data, size_t len)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;

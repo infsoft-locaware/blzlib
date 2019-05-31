@@ -16,7 +16,7 @@
 
 static sd_event *event = NULL;
 
-static void notify_handler(const char* data, size_t len, blz_char* ch)
+static void notify_handler(const uint8_t* data, size_t len, blz_char* ch)
 {
 	LOG_INF("RX: '%.*s'", (int)len - 1, data);
 }

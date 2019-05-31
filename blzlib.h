@@ -20,7 +20,7 @@ typedef struct blz_context blz;
 typedef struct blz_dev blz_dev;
 typedef struct blz_char blz_char;
 
-typedef void (*blz_notify_handler_t)(const char* data, size_t len, blz_char* ch);
+typedef void (*blz_notify_handler_t)(const uint8_t* data, size_t len, blz_char* ch);
 typedef void (*blz_scan_handler_t)(const char* mac, const char* name, char** uuids);
 typedef void (*blz_disconn_handler_t)(void);
 
@@ -42,8 +42,8 @@ char** blz_list_char_uuids(blz_dev* dev);
 
 blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid);
 
-bool blz_char_write(blz_char* ch, const char* data, size_t len);
-int blz_char_read(blz_char* ch, char* data, size_t len);
+bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len);
+int blz_char_read(blz_char* ch, uint8_t* data, size_t len);
 bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb);
 bool blz_char_notify_stop(blz_char* ch);
 /** returns fd or -1 on error. need to close(fd) to release */

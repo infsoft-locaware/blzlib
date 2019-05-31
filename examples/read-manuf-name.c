@@ -8,7 +8,7 @@ int main(int argc, char** argv)
 	blz* blz = NULL;
 	blz_dev* dev = NULL;
 	blz_char* rch = NULL;
-	char buf[20];
+	uint8_t buf[20];
 
 	if (argv[1] == NULL) {
 		LOG_ERR("Pass MAC address of device to connect to");
