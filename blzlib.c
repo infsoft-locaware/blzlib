@@ -205,7 +205,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 	return r;
 }
 
-static int blz_connect_new(blz_dev* dev, const char* macstr)
+static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 {
 	int r;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
@@ -235,7 +235,10 @@ static int blz_connect_new(blz_dev* dev, const char* macstr)
 		goto exit;
 	}
 
-	r = msg_append_property(call, "AddressType", 's', "random"); // "public"
+	/* AddressType must either be public or random for BLE, otherwise a
+	 * Bluetooth classic connection (BR/EDR) is attempted */
+	r = msg_append_property(call, "AddressType", 's',
+				addr_public ? "public" : "random");
 	if (r < 0) {
 		goto exit;
 	}
@@ -362,7 +365,13 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 	if (conn_status == 0) {
 		r = blz_connect_known(dev, macstr);
 	} else if (conn_status == -1) {
-		r = blz_connect_new(dev, macstr);
+		/* workaround: since connect_new needs to know the address type,
+		 * but we don't have it, first try to connect to public address
+		 * and then to random address */
+		r = blz_connect_new(dev, macstr, true);
+		if (r < 0) {
+			r = blz_connect_new(dev, macstr, false);
+		}
 	}
 
 	if (r < 0) {
