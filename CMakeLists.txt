@@ -32,7 +32,7 @@ target_link_libraries(blz-scan-discover blzlib ${LIBSYSTEMD_LIBRARIES})
 
 set(CMAKE_C_FLAGS "-DDEBUG=1")
 
-install(FILES blzlib.h blzlib_util.h
+install(FILES blzlib.h blzlib_util.h blzlib_log.h
 	DESTINATION include
 )
 
