@@ -26,3 +26,12 @@ uint8_t* blz_string_to_mac_s(const char* str)
 	return mac;
 }
 
+const char* blz_addr_type_str(enum blz_addr_type atype)
+{
+	switch (atype) {
+		case BLZ_ADDR_UNKNOWN: return "unknown";
+		case BLZ_ADDR_PUBLIC: return "public";
+		case BLZ_ADDR_RANDOM: return "random";
+	}
+	return "-invalid-";
+}

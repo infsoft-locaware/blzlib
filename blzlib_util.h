@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "blzlib.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,7 +40,7 @@ extern "C" {
 
 bool blz_string_to_mac(const char* str, uint8_t mac[6]);
 uint8_t* blz_string_to_mac_s(const char* str);
-
+const char* blz_addr_type_str(enum blz_addr_type atype);
 
 #ifdef __cplusplus
 }
