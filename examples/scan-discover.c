@@ -14,7 +14,7 @@ static int scan_idx = 0;
 static void discover(blz* blz, const char* mac)
 {
 	LOG_INF("Connecting to %s...", mac);
-	blz_dev* dev = blz_connect(blz, mac, NULL);
+	blz_dev* dev = blz_connect(blz, mac, BLZ_ADDR_UNKNOWN, NULL);
 	if (!dev)
 		return;
 

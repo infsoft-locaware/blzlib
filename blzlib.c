@@ -280,7 +280,7 @@ exit:
 	return r;
 }
 
-blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
+blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz_disconn_handler_t cb)
 {
 	int r;
 	uint8_t mac[6];
@@ -365,12 +365,10 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb)
 	if (conn_status == 0) {
 		r = blz_connect_known(dev, macstr);
 	} else if (conn_status == -1) {
-		/* workaround: since connect_new needs to know the address type,
-		 * but we don't have it, first try to connect to public address
-		 * and then to random address */
-		r = blz_connect_new(dev, macstr, true);
-		if (r < 0) {
-			r = blz_connect_new(dev, macstr, false);
+		r = blz_connect_new(dev, macstr, atype == BLZ_ADDR_PUBLIC ? true : false);
+		/* when addr type is unknown and connect failed, try the other type */
+		if (r < 0 && atype == BLZ_ADDR_UNKNOWN) {
+			r = blz_connect_new(dev, macstr, atype == BLZ_ADDR_PUBLIC ? false : true);
 		}
 	}
 

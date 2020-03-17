@@ -16,6 +16,8 @@
 extern "C" {
 #endif
 
+enum blz_addr_type { BLZ_ADDR_UNKNOWN, BLZ_ADDR_PUBLIC, BLZ_ADDR_RANDOM };
+
 typedef struct blz_context blz;
 typedef struct blz_dev blz_dev;
 typedef struct blz_char blz_char;
@@ -31,7 +33,7 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_start(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_stop(blz* ctx);
 
-blz_dev* blz_connect(blz* ctx, const char* macstr, blz_disconn_handler_t cb);
+blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz_disconn_handler_t cb);
 /* this frees dev */
 void blz_disconnect(blz_dev* dev);
 

@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
 	/* Connect to device */
 	LOG_INF("Connecting to %s...", argv[1]);
-	dev = blz_connect(blz, argv[1], NULL);
+	dev = blz_connect(blz, argv[1], BLZ_ADDR_UNKNOWN, NULL);
 	if (!dev)
 		goto exit;
 
