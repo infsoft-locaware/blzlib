@@ -382,6 +382,9 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 	r = blz_loop_timeout(ctx, &dev->services_resolved, 30000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
+		/* force disconnect */
+		dev->connected = true;
+		blz_disconnect(dev);
 	} else {
 		dev->connected = true;
 		dev->disconnect_cb = cb;
