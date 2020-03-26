@@ -382,8 +382,6 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 	r = blz_loop_timeout(ctx, &dev->services_resolved, 30000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
-		/* force disconnect */
-		dev->connected = true;
 		blz_disconnect(dev);
 	} else {
 		dev->connected = true;
@@ -428,22 +426,20 @@ void blz_disconnect(blz_dev* dev)
 		dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
 	}
 
-	if (dev->connected) {
-		sd_bus_error error = SD_BUS_ERROR_NULL;
-		int r;
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	int r;
 
-		r = sd_bus_call_method(dev->ctx->bus,
-			"org.bluez", dev->path,
-			"org.bluez.Device1",
-			"Disconnect",
-			&error, NULL, "");
+	r = sd_bus_call_method(dev->ctx->bus,
+		"org.bluez", dev->path,
+		"org.bluez.Device1",
+		"Disconnect",
+		&error, NULL, "");
 
-		if (r < 0) {
-			LOG_ERR("BLZ failed to disconnect: %s", error.message);
-		}
-
-		sd_bus_error_free(&error);
+	if (r < 0) {
+		LOG_ERR("BLZ failed to disconnect: %s", error.message);
 	}
+
+	sd_bus_error_free(&error);
 
 	/* free */
 	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL; i++) {
