@@ -205,13 +205,46 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 	return r;
 }
 
+static int connect_new_cb(sd_bus_message *reply, void *userdata, sd_bus_error *error)
+{
+	int r;
+	char* opath;
+	blz_dev* dev = (blz_dev*)userdata;
+
+	const sd_bus_error *err = sd_bus_message_get_error(reply);
+	if (err != NULL) {
+		r = -sd_bus_message_get_errno(reply);
+		LOG_INF("BLZ connect new error: %s %s (%d)",
+			err->name, err->message, r);
+		goto exit;
+	}
+
+	r = sd_bus_message_read_basic(reply, 'o', &opath);
+	if (r < 0) {
+		LOG_ERR("BLZ connect new failed to read result: %s", error->message);
+		goto exit;
+	}
+
+	if (strcmp(opath, dev->path) != 0) {
+		LOG_ERR("BLZ connect new device paths don't match (%s %s)",
+			opath, dev->path);
+		r = -1;
+		goto exit;
+	}
+
+exit:
+	dev->connect_new_result = r;
+	dev->connect_new_done = true;
+	return r;
+}
+
 static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 {
 	int r;
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* call = NULL;
-	sd_bus_message* reply = NULL;
-	char* opath;
+
+	LOG_INF("Connect new to %s (%s)", macstr, addr_public ? "public" : "random");
 
 	r = sd_bus_message_new_method_call(dev->ctx->bus, &call,
 		"org.bluez", dev->ctx->path,
@@ -250,8 +283,12 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 		goto exit;
 	}
 
-	/* call ConnectDevice, it is only supported from Bluez 5.49 on */
-	r = sd_bus_call(dev->ctx->bus, call, 0, &error, &reply);
+	/* call ConnectDevice, it is only supported from Bluez 5.49 on
+	 * we call it async because it can take longer than the normal sd_bus
+	 * timeout and we want to wait until it is finished or failed */
+	dev->connect_new_done = false;
+	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_new_cb, dev,
+			      CONNECT_NEW_TIMEOUT * 1000000);
 	if (r < 0) {
 		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_METHOD)) {
 			LOG_NOTI("BLZ connect new failed: Bluez < 5.49 (with -E flag) doesn't support ConnectDevice");
@@ -261,22 +298,18 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 		goto exit;
 	}
 
-	r = sd_bus_message_read_basic(reply, 'o', &opath);
+	/* wait for callback */
+	r = blz_loop_timeout(dev->ctx, &dev->connect_new_done,
+			     CONNECT_NEW_TIMEOUT * 1000);
 	if (r < 0) {
-		LOG_ERR("BLZ connect new failed to read result: %s", error.message);
-		goto exit;
-	}
-
-	if (strcmp(opath, dev->path) != 0) {
-		LOG_ERR("BLZ connect new device paths don't match (%s %s)",
-			opath, dev->path);
-		r = -1;
+		LOG_ERR("BLZ connect new timeout");
+	} else {
+		r = dev->connect_new_result;
 	}
 
 exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(call);
-	sd_bus_message_unref(reply);
 	return r;
 }
 

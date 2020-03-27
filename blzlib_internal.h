@@ -12,6 +12,7 @@
 #define UUID_STR_LEN		37
 #define MAC_STR_LEN		18
 #define NAME_STR_LEN		20
+#define CONNECT_NEW_TIMEOUT	60 /* sec */
 
 /* this return value is used to indicate that we found what was searched */
 #define RETURN_FOUND		1000
@@ -29,6 +30,8 @@ struct blz_dev {
 	char			mac[MAC_STR_LEN];
 	char			name[NAME_STR_LEN];
 	sd_bus_slot*		connect_slot;
+	bool			connect_new_done;
+	int			connect_new_result;
 	bool			connected;
 	bool			services_resolved;
 	char**			service_uuids;
