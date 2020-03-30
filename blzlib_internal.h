@@ -13,6 +13,7 @@
 #define MAC_STR_LEN		18
 #define NAME_STR_LEN		20
 #define CONNECT_NEW_TIMEOUT	60 /* sec */
+#define SERV_RESOLV_TIMEOUT	60 /* sec */
 
 /* this return value is used to indicate that we found what was searched */
 #define RETURN_FOUND		1000

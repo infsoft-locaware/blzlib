@@ -412,7 +412,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 	/* wait until ServicesResolved property changed to true for this device.
 	 * we usually receive connected = true before that, but at that time we
 	 * are not ready yet to look up service and characteristic UUIDs */
-	r = blz_loop_timeout(ctx, &dev->services_resolved, 300);
+	r = blz_loop_timeout(ctx, &dev->services_resolved, SERV_RESOLV_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
 		blz_disconnect(dev);
