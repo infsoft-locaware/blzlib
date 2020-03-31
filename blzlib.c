@@ -516,6 +516,7 @@ char** blz_list_service_uuids(blz_dev* dev)
 	return dev->service_uuids;
 }
 
+/** frees dev */
 void blz_disconnect(blz_dev* dev)
 {
 	if (!dev) {
