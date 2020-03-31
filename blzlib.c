@@ -440,7 +440,12 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 		}
 	}
 
+	/* connect calls may have failed with timeout, in this situation bluez
+	 * is still trying to open the connection. Calling Disconnect cancels
+	 * the connection attempt */
 	if (r < 0) {
+		blz_disconnect(dev);
+		dev = NULL;
 		goto exit;
 	}
 
