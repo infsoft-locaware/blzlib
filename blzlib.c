@@ -198,8 +198,8 @@ static int connect_async_cb(sd_bus_message *reply, void *userdata, sd_bus_error 
 			err->name, err->message, r);
 	}
 
-	dev->connect_new_result = r;
-	dev->connect_new_done = true;
+	dev->connect_async_result = r;
+	dev->connect_async_done = true;
 	return r;
 }
 
@@ -218,6 +218,8 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 		LOG_ERR("BLZ connect failed to create message: %d", r);
 	}
 
+	dev->connect_async_done = false;
+
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_async_cb, dev,
 			      CONNECT_NEW_TIMEOUT * 1000000);
 
@@ -226,12 +228,12 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 	}
 
 	/* wait for callback */
-	r = blz_loop_timeout(dev->ctx, &dev->connect_new_done,
+	r = blz_loop_timeout(dev->ctx, &dev->connect_async_done,
 			     CONNECT_NEW_TIMEOUT * 1000);
 	if (r < 0) {
-		LOG_ERR("BLZ connect new timeout");
+		LOG_ERR("BLZ connect timeout");
 	} else {
-		r = dev->connect_new_result;
+		r = dev->connect_async_result;
 	}
 
 	return r;
@@ -265,8 +267,8 @@ static int connect_new_cb(sd_bus_message *reply, void *userdata, sd_bus_error *e
 	}
 
 exit:
-	dev->connect_new_result = r;
-	dev->connect_new_done = true;
+	dev->connect_async_result = r;
+	dev->connect_async_done = true;
 	return r;
 }
 
@@ -315,10 +317,11 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 		goto exit;
 	}
 
+	dev->connect_async_done = false;
+
 	/* call ConnectDevice, it is only supported from Bluez 5.49 on
 	 * we call it async because it can take longer than the normal sd_bus
 	 * timeout and we want to wait until it is finished or failed */
-	dev->connect_new_done = false;
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_new_cb, dev,
 			      CONNECT_NEW_TIMEOUT * 1000000);
 	if (r < 0) {
@@ -331,12 +334,12 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	}
 
 	/* wait for callback */
-	r = blz_loop_timeout(dev->ctx, &dev->connect_new_done,
+	r = blz_loop_timeout(dev->ctx, &dev->connect_async_done,
 			     CONNECT_NEW_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect new timeout");
 	} else {
-		r = dev->connect_new_result;
+		r = dev->connect_async_result;
 	}
 
 exit:

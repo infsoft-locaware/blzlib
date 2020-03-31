@@ -31,8 +31,8 @@ struct blz_dev {
 	char			mac[MAC_STR_LEN];
 	char			name[NAME_STR_LEN];
 	sd_bus_slot*		connect_slot;
-	bool			connect_new_done;
-	int			connect_new_result;
+	bool			connect_async_done;
+	int			connect_async_result;
 	bool			connected;
 	bool			services_resolved;
 	char**			service_uuids;
