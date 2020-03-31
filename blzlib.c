@@ -221,7 +221,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 	dev->connect_async_done = false;
 
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_async_cb, dev,
-			      CONNECT_NEW_TIMEOUT * 1000000);
+			      CONNECT_TIMEOUT * 1000000);
 
 	if (r < 0) {
 		LOG_ERR("BLZ connect failed: %d", r);
@@ -229,7 +229,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 
 	/* wait for callback */
 	r = blz_loop_timeout(dev->ctx, &dev->connect_async_done,
-			     CONNECT_NEW_TIMEOUT * 1000);
+			     CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect timeout");
 	} else {
@@ -323,10 +323,11 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	 * we call it async because it can take longer than the normal sd_bus
 	 * timeout and we want to wait until it is finished or failed */
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_new_cb, dev,
-			      CONNECT_NEW_TIMEOUT * 1000000);
+			      CONNECT_TIMEOUT * 1000000);
 	if (r < 0) {
 		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_METHOD)) {
-			LOG_NOTI("BLZ connect new failed: Bluez < 5.49 (with -E flag) doesn't support ConnectDevice");
+			LOG_NOTI("BLZ connect new failed: Bluez < 5.49 (with -E"
+				 " flag) doesn't support ConnectDevice");
 		} else {
 			LOG_ERR("BLZ connect new failed: %s", error.message);
 		}
@@ -335,7 +336,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 
 	/* wait for callback */
 	r = blz_loop_timeout(dev->ctx, &dev->connect_async_done,
-			     CONNECT_NEW_TIMEOUT * 1000);
+			     CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect new timeout");
 	} else {
@@ -348,7 +349,8 @@ exit:
 	return r;
 }
 
-blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz_disconn_handler_t cb)
+blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
+		     blz_disconn_handler_t cb)
 {
 	int r;
 	uint8_t mac[6];
@@ -408,7 +410,8 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 			"ServicesResolved",
 			&error, 'b', &sr);
 		if (r < 0) {
-			LOG_ERR("BLZ failed to get ServicesResolved: %s", error.message);
+			LOG_ERR("BLZ failed to get ServicesResolved: %s",
+				error.message);
 			need_disconnect = true;
 			goto exit;
 		}
@@ -436,10 +439,12 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 	if (conn_status == 0) {
 		r = blz_connect_known(dev, macstr);
 	} else if (conn_status == -1) {
-		r = blz_connect_new(dev, macstr, atype == BLZ_ADDR_PUBLIC ? true : false);
+		r = blz_connect_new(dev, macstr,
+				    atype == BLZ_ADDR_PUBLIC ? true : false);
 		/* when addr type is unknown and connect failed, try the other type */
 		if (r < 0 && atype == BLZ_ADDR_UNKNOWN) {
-			r = blz_connect_new(dev, macstr, atype == BLZ_ADDR_PUBLIC ? false : true);
+			r = blz_connect_new(dev, macstr,
+					    atype == BLZ_ADDR_PUBLIC ? false : true);
 		}
 	}
 
@@ -454,7 +459,8 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 	/* wait until ServicesResolved property changed to true for this device.
 	 * we usually receive connected = true before that, but at that time we
 	 * are not ready yet to look up service and characteristic UUIDs */
-	r = blz_loop_timeout(ctx, &dev->services_resolved, SERV_RESOLV_TIMEOUT * 1000);
+	r = blz_loop_timeout(ctx, &dev->services_resolved,
+			     SERV_RESOLV_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
 		need_disconnect = true;
