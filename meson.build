@@ -9,7 +9,7 @@ blzlib = both_libraries('blzlib',
 	dependencies: libsystemd,
 	install: true)
 
-install_headers('blzlib.h', 'blzlib_util.h')
+install_headers('blzlib.h', 'blzlib_util.h', 'blzlib_log.h')
 
 pkg_mod = import('pkgconfig')
 pkg_mod.generate(blzlib)
