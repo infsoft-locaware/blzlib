@@ -354,6 +354,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 	uint8_t mac[6];
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int conn_status = -2; // invalid
+	bool need_disconnect = false;
 
 	struct blz_dev* dev = calloc(1, sizeof(struct blz_dev));
 	if (dev == NULL) {
@@ -408,10 +409,12 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 			&error, 'b', &sr);
 		if (r < 0) {
 			LOG_ERR("BLZ failed to get ServicesResolved: %s", error.message);
+			need_disconnect = true;
 			goto exit;
 		}
 		dev->services_resolved = sr;
 	} else if (conn_status != 0 && conn_status != -1) {
+		/* invalid status */
 		goto exit;
 	}
 
@@ -444,8 +447,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 	 * is still trying to open the connection. Calling Disconnect cancels
 	 * the connection attempt */
 	if (r < 0) {
-		blz_disconnect(dev);
-		dev = NULL;
+		need_disconnect = true;
 		goto exit;
 	}
 
@@ -455,8 +457,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 	r = blz_loop_timeout(ctx, &dev->services_resolved, SERV_RESOLV_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
-		blz_disconnect(dev);
-		dev = NULL;
+		need_disconnect = true;
 	} else {
 		dev->connected = true;
 		dev->disconnect_cb = cb;
@@ -465,7 +466,11 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz
 exit:
 	sd_bus_error_free(&error);
 	if (r < 0) {
-		free(dev);
+		if (need_disconnect) {
+			blz_disconnect(dev); // frees
+		} else {
+			free(dev);
+		}
 		return NULL;
 	}
 	return dev;
