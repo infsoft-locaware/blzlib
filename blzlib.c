@@ -186,22 +186,54 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	return 0;
 }
 
+static int connect_async_cb(sd_bus_message *reply, void *userdata, sd_bus_error *error)
+{
+	int r = 0;
+	blz_dev* dev = (blz_dev*)userdata;
+
+	const sd_bus_error *err = sd_bus_message_get_error(reply);
+	if (err != NULL) {
+		r = -sd_bus_message_get_errno(reply);
+		LOG_INF("BLZ connect error: %s '%s' (%d)",
+			err->name, err->message, r);
+	}
+
+	dev->connect_new_result = r;
+	dev->connect_new_done = true;
+	return r;
+}
+
+
 static int blz_connect_known(blz_dev* dev, const char* macstr)
 {
 	int r;
-	sd_bus_error error = SD_BUS_ERROR_NULL;
+	sd_bus_message* call = NULL;
 
-	r = sd_bus_call_method(dev->ctx->bus,
+	r = sd_bus_message_new_method_call(dev->ctx->bus, &call,
 		"org.bluez", dev->path,
 		"org.bluez.Device1",
-		"Connect",
-		&error, NULL, "");
+		"Connect");
 
 	if (r < 0) {
-		LOG_ERR("BLZ connect failed: %s", error.message);
+		LOG_ERR("BLZ connect failed to create message: %d", r);
 	}
 
-	sd_bus_error_free(&error);
+	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_async_cb, dev,
+			      CONNECT_NEW_TIMEOUT * 1000000);
+
+	if (r < 0) {
+		LOG_ERR("BLZ connect failed: %d", r);
+	}
+
+	/* wait for callback */
+	r = blz_loop_timeout(dev->ctx, &dev->connect_new_done,
+			     CONNECT_NEW_TIMEOUT * 1000);
+	if (r < 0) {
+		LOG_ERR("BLZ connect new timeout");
+	} else {
+		r = dev->connect_new_result;
+	}
+
 	return r;
 }
 
