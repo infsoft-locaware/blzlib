@@ -177,7 +177,7 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	struct blz_dev* dev = user;
 
 	if (dev == NULL) {
-		LOG_ERR("BLZ conn no dev");
+		LOG_ERR("BLZ connect no dev");
 		return -1;
 	}
 
@@ -190,6 +190,11 @@ static int connect_known_cb(sd_bus_message *reply, void *userdata, sd_bus_error 
 {
 	int r = 0;
 	blz_dev* dev = (blz_dev*)userdata;
+
+	if (dev == NULL) {
+		LOG_ERR("BLZ connect cb no dev");
+		return -1;
+	}
 
 	const sd_bus_error *err = sd_bus_message_get_error(reply);
 	if (err != NULL) {
@@ -244,6 +249,11 @@ static int connect_new_cb(sd_bus_message *reply, void *userdata, sd_bus_error *e
 	int r;
 	char* opath;
 	blz_dev* dev = (blz_dev*)userdata;
+
+	if (dev == NULL) {
+		LOG_ERR("BLZ connect new cb no dev");
+		return -1;
+	}
 
 	const sd_bus_error *err = sd_bus_message_get_error(reply);
 	if (err != NULL) {
