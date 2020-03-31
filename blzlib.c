@@ -257,15 +257,21 @@ static int connect_new_cb(sd_bus_message *reply, void *userdata, sd_bus_error *e
 
 	const sd_bus_error *err = sd_bus_message_get_error(reply);
 	if (err != NULL) {
-		r = -sd_bus_message_get_errno(reply);
-		LOG_INF("BLZ connect new error: %s %s (%d)",
-			err->name, err->message, r);
+		if (sd_bus_error_has_name(err, SD_BUS_ERROR_UNKNOWN_METHOD)) {
+			LOG_NOTI("BLZ connect new failed: Bluez < 5.49 (with -E"
+				 " flag) doesn't support ConnectDevice");
+			r = -2;
+		} else {
+			r = -sd_bus_message_get_errno(reply);
+			LOG_INF("BLZ connect new error: %s '%s' (%d)",
+				err->name, err->message, r);
+		}
 		goto exit;
 	}
 
 	r = sd_bus_message_read_basic(reply, 'o', &opath);
 	if (r < 0) {
-		LOG_ERR("BLZ connect new failed to read result: %s", error->message);
+		LOG_ERR("BLZ connect new invalid reply");
 		goto exit;
 	}
 
@@ -285,7 +291,6 @@ exit:
 static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 {
 	int r;
-	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* call = NULL;
 
 	LOG_INF("Connect new to %s (%s)", macstr, addr_public ? "public" : "random");
@@ -335,12 +340,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_new_cb, dev,
 			      CONNECT_TIMEOUT * 1000000);
 	if (r < 0) {
-		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_METHOD)) {
-			LOG_NOTI("BLZ connect new failed: Bluez < 5.49 (with -E"
-				 " flag) doesn't support ConnectDevice");
-		} else {
-			LOG_ERR("BLZ connect new failed: %s", error.message);
-		}
+		LOG_ERR("BLZ connect new failed: %d", r);
 		goto exit;
 	}
 
@@ -354,7 +354,6 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	}
 
 exit:
-	sd_bus_error_free(&error);
 	sd_bus_message_unref(call);
 	return r;
 }
