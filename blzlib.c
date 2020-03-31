@@ -186,7 +186,7 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	return 0;
 }
 
-static int connect_async_cb(sd_bus_message *reply, void *userdata, sd_bus_error *error)
+static int connect_known_cb(sd_bus_message *reply, void *userdata, sd_bus_error *error)
 {
 	int r = 0;
 	blz_dev* dev = (blz_dev*)userdata;
@@ -220,7 +220,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 
 	dev->connect_async_done = false;
 
-	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_async_cb, dev,
+	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_known_cb, dev,
 			      CONNECT_TIMEOUT * 1000000);
 
 	if (r < 0) {
