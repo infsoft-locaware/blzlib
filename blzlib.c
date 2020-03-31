@@ -221,15 +221,19 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 
 	if (r < 0) {
 		LOG_ERR("BLZ connect failed to create message: %d", r);
+		goto exit;
 	}
 
 	dev->connect_async_done = false;
 
+	/* call it async because it can take longer than the normal sd_bus
+	 * timeout and we want to wait until it is finished or failed */
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_known_cb, dev,
 			      CONNECT_TIMEOUT * 1000000);
 
 	if (r < 0) {
 		LOG_ERR("BLZ connect failed: %d", r);
+		goto exit;
 	}
 
 	/* wait for callback */
@@ -241,6 +245,8 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 		r = dev->connect_async_result;
 	}
 
+exit:
+	sd_bus_message_unref(call);
 	return r;
 }
 
@@ -334,8 +340,8 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 
 	dev->connect_async_done = false;
 
-	/* call ConnectDevice, it is only supported from Bluez 5.49 on
-	 * we call it async because it can take longer than the normal sd_bus
+	/* call ConnectDevice, it is only supported from Bluez 5.49 on.
+	 * call it async because it can take longer than the normal sd_bus
 	 * timeout and we want to wait until it is finished or failed */
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_new_cb, dev,
 			      CONNECT_TIMEOUT * 1000000);
