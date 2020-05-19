@@ -21,9 +21,11 @@ enum blz_addr_type { BLZ_ADDR_UNKNOWN, BLZ_ADDR_PUBLIC, BLZ_ADDR_RANDOM };
 typedef struct blz_context blz;
 typedef struct blz_dev blz_dev;
 typedef struct blz_char blz_char;
+typedef struct blz_serv blz_serv;
 
-typedef void (*blz_notify_handler_t)(const uint8_t* data, size_t len, blz_char* ch);
-typedef void (*blz_scan_handler_t)(const char* mac, const char* name, char** uuids);
+typedef void (*blz_notify_handler_t)(const uint8_t* data, size_t len,
+									 blz_char* ch);
+typedef void (*blz_scan_handler_t)(const uint8_t* mac, int8_t rssi, const uint8_t* data, size_t len);
 typedef void (*blz_disconn_handler_t)(void);
 
 blz* blz_init(const char* dev);
@@ -33,18 +35,24 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_start(blz* ctx, blz_scan_handler_t cb);
 bool blz_scan_stop(blz* ctx);
 
-blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype, blz_disconn_handler_t cb);
+blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
+					 blz_disconn_handler_t cb);
 /* this frees dev */
 void blz_disconnect(blz_dev* dev);
 
+bool blz_discover_services(blz_dev* dev);
+blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid_srv);
 /** returns NULL terminated list of service UUID strings, don't free them */
 char** blz_list_service_uuids(blz_dev* dev);
-/** returns NULL terminated list of characteristic UUID strings, don't free them */
-char** blz_list_char_uuids(blz_dev* dev);
 
-blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid);
+/** returns NULL terminated list of characteristic UUID strings, don't free them
+ */
+char** blz_list_char_uuids(blz_dev* dev);
+bool blz_discover_characteristics(blz_serv* serv);
+blz_char* blz_get_char_from_uuid(blz_serv* serv, const char* uuid_char);
 
 bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len);
+bool blz_char_write_cmd(blz_char* ch, const uint8_t* data, size_t len);
 int blz_char_read(blz_char* ch, uint8_t* data, size_t len);
 bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb);
 bool blz_char_notify_stop(blz_char* ch);

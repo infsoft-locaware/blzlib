@@ -2,6 +2,7 @@
 
 #include "blzlib.h"
 #include "blzlib_log.h"
+#include "blzlib_util.h"
 
 int main(int argc, char** argv)
 {
@@ -26,6 +27,11 @@ int main(int argc, char** argv)
 	if (!dev)
 		goto exit;
 
+	blz_serv* srv = blz_get_serv_from_uuid(dev, "0000180a-0000-1000-8000-00805f9b34fb");
+	if (!srv) {
+		goto exit;
+	}
+
 	/* List available characteristics, this is not necessary */
 	char** uuids = blz_list_char_uuids(dev);
 	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
@@ -33,7 +39,7 @@ int main(int argc, char** argv)
 	}
 
 	/* Find characteristic for manufacturer name */
-	rch = blz_get_char_from_uuid(dev, "00002a29-0000-1000-8000-00805f9b34fb");
+	rch = blz_get_char_from_uuid(srv, "00002a29-0000-1000-8000-00805f9b34fb");
 	if (!rch)
 		goto exit;
 

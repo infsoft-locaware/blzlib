@@ -270,7 +270,7 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		/* callback */
 		blz* ctx = user;
 		if (ctx != NULL && ctx->scan_cb != NULL) {
-			ctx->scan_cb(dev.mac, dev.name, dev.service_uuids);
+			ctx->scan_cb(dev.mac, 0, NULL, 0);
 		}
 
 		/* free uuids of temporary device */

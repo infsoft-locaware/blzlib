@@ -25,6 +25,14 @@ struct blz_context {
 	sd_bus_slot*		scan_slot;
 };
 
+struct blz_serv {
+	struct blz_context* ctx;
+	struct blz_dev* dev;
+	uint8_t uuid[16]; // little-endian
+	struct blz_char* chars;
+	size_t chars_len;
+};
+
 struct blz_dev {
 	struct blz_context*	ctx;
 	char			path[DBUS_PATH_MAX_LEN];
@@ -39,15 +47,18 @@ struct blz_dev {
 	char**			char_uuids;
 	size_t			chars_idx;
 	blz_disconn_handler_t	disconnect_cb;
+	struct blz_serv dummy_serv;
 };
 
 /* Characteristic Flags (Characteristic Properties bit field) */
-#define BLZ_CHAR_BROADCAST		0x01
-#define BLZ_CHAR_READ			0x02
-#define BLZ_CHAR_WRITE_WITHOUT_RESPONSE	0x04
-#define BLZ_CHAR_WRITE			0x08
-#define BLZ_CHAR_NOTIFY			0x10
-#define BLZ_CHAR_INDICATE		0x20
+#define BLZ_CHAR_BROADCAST				0x01
+#define BLZ_CHAR_READ					0x02
+#define BLZ_CHAR_WRITE_WITHOUT_RESPONSE 0x04
+#define BLZ_CHAR_WRITE					0x08
+#define BLZ_CHAR_NOTIFY					0x10
+#define BLZ_CHAR_INDICATE				0x20
+#define BLZ_CHAR_SIGNED_WRITE			0x40
+#define BLZ_CHAR_EXTENDED				0x80
 
 struct blz_char {
 	struct blz_context*	ctx;

@@ -387,7 +387,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 	blz_string_to_mac(macstr, mac);
 	r = snprintf(dev->path, DBUS_PATH_MAX_LEN,
 			"%s/dev_%02X_%02X_%02X_%02X_%02X_%02X",
-			ctx->path, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+			ctx->path, mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
 
 	if (r < 0 || r >= DBUS_PATH_MAX_LEN) {
 		LOG_ERR("BLZ connect failed to construct device path");
@@ -495,6 +495,18 @@ exit:
 		return NULL;
 	}
 	return dev;
+}
+
+bool blz_discover_services(blz_dev* dev)
+{
+	return true;
+}
+
+blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid_srv)
+{
+	dev->dummy_serv.dev = dev;
+	dev->dummy_serv.ctx = dev->ctx;
+	return &dev->dummy_serv; // TODO!
 }
 
 char** blz_list_service_uuids(blz_dev* dev)
@@ -627,7 +639,7 @@ exit:
 	return dev->char_uuids;
 }
 
-blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
+blz_char* blz_get_char_from_uuid(blz_serv* srv, const char* uuid)
 {
 	/* alloc char structure for use later */
 	struct blz_char* ch = calloc(1, sizeof(struct blz_char));
@@ -636,8 +648,8 @@ blz_char* blz_get_char_from_uuid(blz_dev* dev, const char* uuid)
 		return NULL;
 	}
 
-	ch->ctx = dev->ctx;
-	ch->dev = dev;
+	ch->ctx = srv->dev->ctx;
+	ch->dev = srv->dev;
 	strncpy(ch->uuid, uuid, UUID_STR_LEN);
 
 	/* this will try to find the uuid in char, fill required info */
