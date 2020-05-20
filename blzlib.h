@@ -41,21 +41,20 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 /* this frees dev */
 void blz_disconnect(blz_dev* dev);
 
-bool blz_discover_services(blz_dev* dev);
-blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid_srv);
 /** returns NULL terminated list of service UUID strings, don't free them */
 char** blz_list_service_uuids(blz_dev* dev);
+blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid_srv);
 
 /** returns NULL terminated list of characteristic UUID strings, don't free them
  */
-char** blz_list_char_uuids(blz_serv* dev);
-bool blz_discover_characteristics(blz_serv* serv);
+char** blz_list_char_uuids(blz_serv* serv);
 blz_char* blz_get_char_from_uuid(blz_serv* serv, const char* uuid_char);
 
 bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len);
 bool blz_char_write_cmd(blz_char* ch, const uint8_t* data, size_t len);
 int blz_char_read(blz_char* ch, uint8_t* data, size_t len);
 bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb);
+bool blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb);
 bool blz_char_notify_stop(blz_char* ch);
 /** returns fd or -1 on error. need to close(fd) to release */
 int blz_char_write_fd_acquire(blz_char* ch);

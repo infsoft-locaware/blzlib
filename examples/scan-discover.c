@@ -16,19 +16,21 @@ static void discover(blz* blz, const char* mac)
 {
 	LOG_INF("Connecting to %s...", mac);
 	blz_dev* dev = blz_connect(blz, mac, BLZ_ADDR_UNKNOWN, NULL);
-	if (!dev)
+	if (!dev) {
 		return;
+	}
 
 	char** uuids = blz_list_service_uuids(dev);
 
 	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
 		LOG_INF("\t[serv %s]", uuids[i]);
-	}
-
-	uuids = blz_list_char_uuids(dev);
-
-	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
-		LOG_INF("\t[char %s]", uuids[i]);
+		blz_serv* srv = blz_get_serv_from_uuid(dev, uuids[i]);
+		if (srv) {
+			char** chuuids = blz_list_char_uuids(srv);
+			for (int i = 0; chuuids != NULL && chuuids[i] != NULL; i++) {
+				LOG_INF("\t\t[char %s]", chuuids[i]);
+			}
+		}
 	}
 
 	blz_disconnect(dev);
@@ -69,20 +71,29 @@ int main(int argc, char** argv)
 	sigaction(SIGINT, &act, NULL);
 
 	blz* blz = blz_init("hci0");
+	if (!blz) {
+		return EXIT_FAILURE;
+	}
 
-	LOG_INF("Cached devices...");
-	blz_known_devices(blz, scan_cb);
+	if (argc > 1) {
+		for (int i = 1; i < argc; i++) {
+			discover(blz, argv[i]);
+		}
+	} else {
+		LOG_INF("Cached devices...");
+		blz_known_devices(blz, scan_cb);
 
-	LOG_INF("Scanning for 10 seconds... press Ctrl-C to cancel...");
-	blz_scan_start(blz, scan_cb);
+		LOG_INF("Scanning for 10 seconds... press Ctrl-C to cancel...");
+		blz_scan_start(blz, scan_cb);
 
-	blz_loop_timeout(blz, &terminate, 10000);
+		blz_loop_timeout(blz, &terminate, 10000);
 
-	blz_scan_stop(blz);
+		blz_scan_stop(blz);
 
-	/* connect to device to discover services and characteristics */
-	for (int i = 0; i < MAX_SCAN && MAC_NOT_EMPTY(scanned_macs[i]); i++) {
-		discover(blz, blz_mac_to_string_s(scanned_macs[i]));
+		/* connect to device to discover services and characteristics */
+		for (int i = 0; i < MAX_SCAN && MAC_NOT_EMPTY(scanned_macs[i]); i++) {
+			discover(blz, blz_mac_to_string_s(scanned_macs[i]));
+		}
 	}
 
 	blz_fini(blz);

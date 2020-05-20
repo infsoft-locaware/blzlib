@@ -8,6 +8,7 @@ int main(int argc, char** argv)
 {
 	blz* blz = NULL;
 	blz_dev* dev = NULL;
+	blz_serv* srv = NULL;
 	blz_char* rch = NULL;
 	uint8_t buf[20];
 
@@ -18,17 +19,18 @@ int main(int argc, char** argv)
 
 	/* Initialize bluetooth adapter and context */
 	blz = blz_init("hci0");
-	if (!blz)
+	if (!blz) {
 		goto exit;
+	}
 
 	/* Connect to device with MAC address */
 	LOG_INF("Connecting to %s...", argv[1]);
 	dev = blz_connect(blz, argv[1], BLZ_ADDR_UNKNOWN, NULL);
-	if (!dev)
+	if (!dev) {
 		goto exit;
+	}
 
-	blz_serv* srv
-		= blz_get_serv_from_uuid(dev, "0000180a-0000-1000-8000-00805f9b34fb");
+	srv = blz_get_serv_from_uuid(dev, "0000180a-0000-1000-8000-00805f9b34fb");
 	if (!srv) {
 		goto exit;
 	}
@@ -41,8 +43,9 @@ int main(int argc, char** argv)
 
 	/* Find characteristic for manufacturer name */
 	rch = blz_get_char_from_uuid(srv, "00002a29-0000-1000-8000-00805f9b34fb");
-	if (!rch)
+	if (!rch) {
 		goto exit;
+	}
 
 	/* Read manufacturer name string */
 	int len = blz_char_read(rch, buf, 20);

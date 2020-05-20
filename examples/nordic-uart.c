@@ -10,8 +10,9 @@
 #include "blzlib.h"
 #include "blzlib_log.h"
 
-#define UUID_WRITE "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-#define UUID_READ  "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+#define UUID_SERVICE "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+#define UUID_WRITE	 "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+#define UUID_READ	 "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
 static sd_event* event = NULL;
 
@@ -80,6 +81,7 @@ int main(int argc, char** argv)
 {
 	blz* blz = NULL;	  // blz context
 	blz_dev* dev = NULL;  // device we connect to
+	blz_serv* srv = NULL; // NUS service
 	blz_char* wch = NULL; // characteristic to write to
 	blz_char* rch = NULL; // characteristic we read from
 	sd_bus* sdbus = NULL; // sd-bus object for sd-event
@@ -97,18 +99,25 @@ int main(int argc, char** argv)
 
 	/* Initialize adapter and context */
 	blz = blz_init("hci0");
-	if (!blz)
+	if (!blz) {
 		goto exit;
+	}
 
 	/* Connect to device */
 	LOG_INF("Connecting to %s...", argv[1]);
 	dev = blz_connect(blz, argv[1], BLZ_ADDR_UNKNOWN, NULL);
-	if (!dev)
+	if (!dev) {
 		goto exit;
+	}
+
+	srv = blz_get_serv_from_uuid(dev, UUID_SERVICE);
+	if (!srv) {
+		goto exit;
+	}
 
 	/* Find UUIDs we need */
-	wch = blz_get_char_from_uuid(dev, UUID_WRITE);
-	rch = blz_get_char_from_uuid(dev, UUID_READ);
+	wch = blz_get_char_from_uuid(srv, UUID_WRITE);
+	rch = blz_get_char_from_uuid(srv, UUID_READ);
 
 	if (!wch || !rch) {
 		LOG_ERR("Nordic UART characteristics not found");
@@ -117,15 +126,17 @@ int main(int argc, char** argv)
 
 	/* Start to get notifications from read characteristic */
 	bool b = blz_char_notify_start(rch, notify_handler);
-	if (!b)
+	if (!b) {
 		goto exit;
+	}
 
 	/* Get a file descriptor we can use to write to the write characteristic.
 	 * Writing to a fd is more efficient than repeatedly using
 	 * blz_char_write(wch, buffer, len); */
 	int wfd = blz_char_write_fd_acquire(wch);
-	if (wfd < 0)
+	if (wfd < 0) {
 		goto exit;
+	}
 
 	write(wfd, "---Nordic UART client started---\r\n", 34);
 

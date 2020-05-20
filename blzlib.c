@@ -476,11 +476,6 @@ exit:
 	return dev;
 }
 
-bool blz_discover_services(blz_dev* dev)
-{
-	return dev->services_resolved;
-}
-
 static bool find_serv_by_uuid(blz_serv* srv)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
@@ -526,7 +521,7 @@ blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid)
 		return NULL;
 	}
 
-	LOG_INF("Found service with UUID %s", uuid);
+	// LOG_INF("Found service with UUID %s", uuid);
 	return srv;
 }
 
@@ -828,6 +823,11 @@ exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
 	return r >= 0;
+}
+
+bool blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb)
+{
+	return blz_char_notify_start(ch, cb);
 }
 
 bool blz_char_notify_stop(blz_char* ch)
