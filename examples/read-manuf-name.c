@@ -33,7 +33,7 @@ int main(int argc, char** argv)
 	}
 
 	/* List available characteristics, this is not necessary */
-	char** uuids = blz_list_char_uuids(dev);
+	char** uuids = blz_list_char_uuids(srv);
 	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
 		LOG_INF("Characteristic UUID %s", uuids[i]);
 	}

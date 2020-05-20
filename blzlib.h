@@ -47,7 +47,7 @@ char** blz_list_service_uuids(blz_dev* dev);
 
 /** returns NULL terminated list of characteristic UUID strings, don't free them
  */
-char** blz_list_char_uuids(blz_dev* dev);
+char** blz_list_char_uuids(blz_serv* dev);
 bool blz_discover_characteristics(blz_serv* serv);
 blz_char* blz_get_char_from_uuid(blz_serv* serv, const char* uuid_char);
 

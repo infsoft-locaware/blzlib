@@ -119,6 +119,80 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 	return r;
 }
 
+static int msg_parse_service1(sd_bus_message* m, const char* opath, blz_serv* srv)
+{
+	const char* str;
+	const char* uuid;
+
+	/* enter array of dict entries */
+	int r = sd_bus_message_enter_container(m, 'a', "{sv}");
+	if (r < 0) {
+		LOG_ERR("BLZ error parse serv 1");
+		return r;
+	}
+
+	/* enter next dict */
+	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0)
+	{
+		/* property name */
+		r = sd_bus_message_read_basic(m, 's', &str);
+		if (r < 0) {
+			LOG_ERR("BLZ error parse serv 2");
+			return r;
+		}
+
+		//LOG_INF("serv Name %s", str);
+
+		if (strcmp(str, "UUID") == 0) {
+			r = msg_read_variant(m, "s", &uuid);
+			if (r < 0) {
+				LOG_ERR("BLZ error parse serv 3");
+				return r;
+			}
+		} else {
+			r = sd_bus_message_skip(m, "v");
+			if (r < 0) {
+				LOG_ERR("BLZ error parse serv 4");
+				return r;
+			}
+		}
+
+		/* exit dict */
+		r = sd_bus_message_exit_container(m);
+		if (r < 0) {
+			LOG_ERR("BLZ error parse serv 5");
+			return r;
+		}
+	}
+
+	if (r < 0) {
+		LOG_ERR("BLZ error parse serv 6");
+		return r;
+	}
+
+	/* exit array */
+	r = sd_bus_message_exit_container(m);
+	if (r < 0) {
+		LOG_ERR("BLZ error parse serv 7");
+		return r;
+	}
+
+	//LOG_INF("Serv UUID %s path %s", uuid, opath);
+
+	/* if UUID matched or if UUID was empty (match all) */
+	if (srv->uuid[0] == '\0' || strcasecmp(uuid, srv->uuid) == 0) {
+		/* save object path and UUID */
+		strncpy(srv->path, opath, DBUS_PATH_MAX_LEN);
+		if (srv->uuid[0] == '\0') {
+			strncpy(srv->uuid, uuid, UUID_STR_LEN);
+		}
+
+		return RETURN_FOUND;
+	}
+
+	return r;
+}
+
 static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 {
 	const char* str;
@@ -232,7 +306,12 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		return r;
 	}
 
-	if (act == MSG_CHAR_FIND && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+	if (act == MSG_SERV_FIND && strcmp(intf, "org.bluez.GattService1") == 0) {
+		/* find service by UUID, returns RETURN_FOUND if found, user
+		 * points to a blz_serv where the UUID to look for is filled */
+		r = msg_parse_service1(m, opath, user);
+	}
+	else if (act == MSG_CHAR_FIND && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		/* find char by UUID, returns RETURN_FOUND if found, user
 		 * points to a blz_char where the UUID to look for is filled */
 		r = msg_parse_characteristic1(m, opath, user);
@@ -248,17 +327,17 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		}
 	}
 	else if (act == MSG_CHARS_ALL && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
-		/* get UUIDs from all characteristics. user points to the device
+		/* get UUIDs from all characteristics. user points to the service
 		 * where enough space for them has already been allocated */
-		blz_dev* dev = user;
+		blz_serv* srv = user;
 		blz_char ch = {0}; // temporary char
 		r = msg_parse_characteristic1(m, opath, &ch);
 		if (r < 0) {
 			return r;
 		}
 		/* copy UUID */
-		dev->char_uuids[dev->chars_idx] = strdup(ch.uuid);
-		dev->chars_idx++;
+		srv->char_uuids[srv->chars_idx] = strdup(ch.uuid);
+		srv->chars_idx++;
 		return 0; // override RETURN_FOUND this would stop the loop
 	}
 	else if (act == MSG_DEVICE && strcmp(intf, "org.bluez.Device1") == 0) {

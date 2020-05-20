@@ -28,9 +28,10 @@ struct blz_context {
 struct blz_serv {
 	struct blz_context* ctx;
 	struct blz_dev* dev;
-	uint8_t uuid[16]; // little-endian
-	struct blz_char* chars;
-	size_t chars_len;
+	char			path[DBUS_PATH_MAX_LEN];
+	char			uuid[UUID_STR_LEN];
+	char**			char_uuids;
+	size_t			chars_idx;
 };
 
 struct blz_dev {
@@ -45,10 +46,7 @@ struct blz_dev {
 	bool			services_resolved;
 	int16_t			rssi;
 	char**			service_uuids;
-	char**			char_uuids;
-	size_t			chars_idx;
 	blz_disconn_handler_t	disconnect_cb;
-	struct blz_serv dummy_serv;
 };
 
 /* Characteristic Flags (Characteristic Properties bit field) */
@@ -73,7 +71,7 @@ struct blz_char {
 };
 
 /* actions that can be done on message parsing for objects and interfaces */
-enum msg_act { MSG_CHAR_FIND, MSG_DEVICE, MSG_DEVICE_SCAN, MSG_CHAR_COUNT, MSG_CHARS_ALL };
+enum msg_act { MSG_CHAR_FIND, MSG_DEVICE, MSG_DEVICE_SCAN, MSG_CHAR_COUNT, MSG_CHARS_ALL, MSG_SERV_FIND };
 
 int msg_parse_objects(sd_bus_message* m, const char* match_path, enum msg_act act, void* user);
 int msg_parse_object(sd_bus_message* m, const char* match_path, enum msg_act act, void* user);

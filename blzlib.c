@@ -502,11 +502,55 @@ bool blz_discover_services(blz_dev* dev)
 	return true;
 }
 
-blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid_srv)
+static bool find_serv_by_uuid(blz_serv* srv)
 {
-	dev->dummy_serv.dev = dev;
-	dev->dummy_serv.ctx = dev->ctx;
-	return &dev->dummy_serv; // TODO!
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	sd_bus_message* reply = NULL;
+	int r;
+
+	r = sd_bus_call_method(srv->ctx->bus,
+		"org.bluez", "/",
+		"org.freedesktop.DBus.ObjectManager",
+		"GetManagedObjects",
+		&error, &reply, "");
+
+	if (r < 0) {
+		LOG_ERR("Failed to get managed objects: %s", error.message);
+		goto exit;
+	}
+
+	r = msg_parse_objects(reply, srv->dev->path, MSG_SERV_FIND, srv);
+	/* error logging done in function */
+
+exit:
+	sd_bus_error_free(&error);
+	sd_bus_message_unref(reply);
+	return r == RETURN_FOUND;
+}
+
+blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid)
+{
+	/* alloc serv structure for use later */
+	struct blz_serv* srv = calloc(1, sizeof(struct blz_serv));
+	if (srv == NULL) {
+		LOG_ERR("blz_srv: alloc failed");
+		return NULL;
+	}
+
+	srv->ctx = dev->ctx;
+	srv->dev = dev;
+	strncpy(srv->uuid, uuid, UUID_STR_LEN);
+
+	/* this will try to find the uuid in char, fill required info */
+	bool b = find_serv_by_uuid(srv);
+	if (!b) {
+		LOG_ERR("Couldn't find service with UUID %s", uuid);
+		free(srv);
+		return NULL;
+	}
+
+	LOG_INF("Found service with UUID %s", uuid);
+	return srv;
 }
 
 char** blz_list_service_uuids(blz_dev* dev)
@@ -559,10 +603,11 @@ void blz_disconnect(blz_dev* dev)
 		free(dev->service_uuids[i]);
 	}
 	free(dev->service_uuids);
-	for (int i = 0; dev->char_uuids != NULL && dev->char_uuids[i] != NULL; i++) {
-		free(dev->char_uuids[i]);
-	}
-	free(dev->char_uuids);
+
+	//for (int i = 0; dev->char_uuids != NULL && dev->char_uuids[i] != NULL; i++) {
+	//	free(dev->char_uuids[i]);
+	//}
+	//free(dev->char_uuids);
 
 	free(dev);
 }
@@ -593,13 +638,13 @@ exit:
 	return r == RETURN_FOUND;
 }
 
-char** blz_list_char_uuids(blz_dev* dev)
+char** blz_list_char_uuids(blz_serv* srv)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
 	int r;
 
-	r = sd_bus_call_method(dev->ctx->bus,
+	r = sd_bus_call_method(srv->ctx->bus,
 		"org.bluez", "/",
 		"org.freedesktop.DBus.ObjectManager",
 		"GetManagedObjects",
@@ -612,22 +657,22 @@ char** blz_list_char_uuids(blz_dev* dev)
 
 	/* first count how many characteristics there are and alloc space */
 	int cnt = 0;
-	r = msg_parse_objects(reply, dev->path, MSG_CHAR_COUNT, &cnt);
+	r = msg_parse_objects(reply, srv->path, MSG_CHAR_COUNT, &cnt);
 	if (r < 0) {
 		goto exit;
 	}
 
 	/* alloc space for them */
-	dev->char_uuids = calloc(cnt+1, sizeof(char*));
-	dev->char_uuids[cnt] = NULL;
-	if (dev->char_uuids == NULL) {
+	srv->char_uuids = calloc(cnt+1, sizeof(char*));
+	srv->char_uuids[cnt] = NULL;
+	if (srv->char_uuids == NULL) {
 		LOG_ERR("BLZ alloc of chars failed");
 		goto exit;
 	}
 
 	/* now parse all characteristics data */
 	sd_bus_message_rewind(reply, true);
-	r = msg_parse_objects(reply, dev->path, MSG_CHARS_ALL, dev);
+	r = msg_parse_objects(reply, srv->path, MSG_CHARS_ALL, srv);
 	/* error logging done in function */
 
 exit:
@@ -636,7 +681,7 @@ exit:
 	if (r < 0) {
 		return NULL;
 	}
-	return dev->char_uuids;
+	return srv->char_uuids;
 }
 
 blz_char* blz_get_char_from_uuid(blz_serv* srv, const char* uuid)
