@@ -4,11 +4,12 @@
 
 #include "blzlib.h"
 #include "blzlib_log.h"
+#include "blzlib_util.h"
 
 #define MAX_SCAN	10
 
 static bool terminate = false;
-static char* scanned_macs[MAX_SCAN];
+static uint8_t scanned_macs[6][MAX_SCAN];
 static int scan_idx = 0;
 
 static void discover(blz* blz, const char* mac)
@@ -33,17 +34,19 @@ static void discover(blz* blz, const char* mac)
 	blz_disconnect(dev);
 }
 
-static void scan_cb(const char* mac, const char* name, char** uuids)
+static void scan_cb(const uint8_t* mac, int8_t rssi, const uint8_t* data, size_t len)
 {
 	/* Note: you can't connect in the scan callback! */
 
-	LOG_INF("%s: %s", mac, name);
+	LOG_INF("SCAN " MAC_FMT " %d", MAC_PARR(mac), rssi);
 
-	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
-		LOG_INF("\t[cached service %s]", uuids[i]);
+	for (int i=0; i < MAX_SCAN && scanned_macs[i] != NULL; i++) {
+		if (memcmp(scanned_macs[i], mac, 6) == 0) {
+			return; // already in list
+		}
 	}
 
-	scanned_macs[scan_idx++] = strdup(mac);
+	memcpy(scanned_macs[scan_idx++], mac, 6);
 
 	if (scan_idx >= MAX_SCAN) {
 		terminate = true;
@@ -77,9 +80,9 @@ int main(int argc, char** argv)
 	blz_scan_stop(blz);
 
 	/* connect to device to discover services and characteristics */
-	for (int i=0; i < MAX_SCAN && scanned_macs[i] != NULL; i++) {
-		discover(blz, scanned_macs[i]);
-		free(scanned_macs[i]);
+	/* connect to device to discover services and characteristics */
+	for (int i=0; i < MAX_SCAN && MAC_NOT_EMPTY(scanned_macs[i]); i++) {
+		discover(blz, blz_mac_to_string_s(scanned_macs[i]));
 	}
 
 	blz_fini(blz);
