@@ -499,7 +499,7 @@ exit:
 
 bool blz_discover_services(blz_dev* dev)
 {
-	return true;
+	return dev->services_resolved;
 }
 
 static bool find_serv_by_uuid(blz_serv* srv)
