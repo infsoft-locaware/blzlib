@@ -5,15 +5,15 @@
  * Version 3. See the file COPYING for more details.
  */
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #include "blzlib_log.h"
 
-static void (*log_handler)(enum loglevel ll, const char *fmt, va_list ap);
+static void (*log_handler)(enum loglevel ll, const char* fmt, va_list ap);
 
-void __attribute__ ((format (printf, 2, 3)))
-blz_log_out(enum loglevel level, const char *format, ...)
+void __attribute__((format(printf, 2, 3)))
+blz_log_out(enum loglevel level, const char* format, ...)
 {
 	va_list args;
 
@@ -29,7 +29,8 @@ blz_log_out(enum loglevel level, const char *format, ...)
 	va_end(args);
 }
 
-void blz_set_log_handler(void (*cb)(enum loglevel ll, const char *fmt, va_list ap))
+void blz_set_log_handler(void (*cb)(enum loglevel ll, const char* fmt,
+									va_list ap))
 {
 	log_handler = cb;
 }

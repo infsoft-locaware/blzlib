@@ -1,12 +1,12 @@
-#include <stdlib.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "blzlib.h"
 #include "blzlib_log.h"
 #include "blzlib_util.h"
 
-#define MAX_SCAN	10
+#define MAX_SCAN 10
 
 static bool terminate = false;
 static uint8_t scanned_macs[6][MAX_SCAN];
@@ -21,26 +21,27 @@ static void discover(blz* blz, const char* mac)
 
 	char** uuids = blz_list_service_uuids(dev);
 
-	for (int i=0; uuids != NULL && uuids[i] != NULL; i++) {
+	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
 		LOG_INF("\t[serv %s]", uuids[i]);
 	}
 
 	uuids = blz_list_char_uuids(dev);
 
-	for (int i=0; uuids != NULL && uuids[i] != NULL; i++) {
+	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
 		LOG_INF("\t[char %s]", uuids[i]);
 	}
 
 	blz_disconnect(dev);
 }
 
-static void scan_cb(const uint8_t* mac, int8_t rssi, const uint8_t* data, size_t len)
+static void scan_cb(const uint8_t* mac, int8_t rssi, const uint8_t* data,
+					size_t len)
 {
 	/* Note: you can't connect in the scan callback! */
 
 	LOG_INF("SCAN " MAC_FMT " %d", MAC_PARR(mac), rssi);
 
-	for (int i=0; i < MAX_SCAN && scanned_macs[i] != NULL; i++) {
+	for (int i = 0; i < MAX_SCAN && scanned_macs[i] != NULL; i++) {
 		if (memcmp(scanned_macs[i], mac, 6) == 0) {
 			return; // already in list
 		}
@@ -80,8 +81,7 @@ int main(int argc, char** argv)
 	blz_scan_stop(blz);
 
 	/* connect to device to discover services and characteristics */
-	/* connect to device to discover services and characteristics */
-	for (int i=0; i < MAX_SCAN && MAC_NOT_EMPTY(scanned_macs[i]); i++) {
+	for (int i = 0; i < MAX_SCAN && MAC_NOT_EMPTY(scanned_macs[i]); i++) {
 		discover(blz, blz_mac_to_string_s(scanned_macs[i]));
 	}
 

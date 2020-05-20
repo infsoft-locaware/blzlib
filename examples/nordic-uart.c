@@ -1,20 +1,19 @@
+#include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
-#include <unistd.h>
-#include <fcntl.h>
 
-#include <systemd/sd-event.h>
 #include <systemd/sd-bus.h>
+#include <systemd/sd-event.h>
 
 #include "blzlib.h"
 #include "blzlib_log.h"
 
-#define UUID_WRITE	"6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-#define UUID_READ	"6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+#define UUID_WRITE "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+#define UUID_READ  "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
-static sd_event *event = NULL;
+static sd_event* event = NULL;
 
 static void notify_handler(const uint8_t* data, size_t len, blz_char* ch)
 {
@@ -25,9 +24,9 @@ static bool signals_block(void)
 {
 	sigset_t sigmask_block;
 	/* Initialize bocked signals (all which we handle) */
-	if (sigemptyset(&sigmask_block)                       == -1 ||
-	    sigaddset(&sigmask_block, SIGINT)                 == -1 ||
-	    sigaddset(&sigmask_block, SIGTERM)                == -1) {
+	if (sigemptyset(&sigmask_block) == -1
+		|| sigaddset(&sigmask_block, SIGINT) == -1
+		|| sigaddset(&sigmask_block, SIGTERM) == -1) {
 		LOG_ERR("failed to initialize block signals");
 		return false;
 	}
@@ -40,7 +39,8 @@ static bool signals_block(void)
 	return true;
 }
 
-static int signal_handler(sd_event_source *s, const struct signalfd_siginfo *si, void *user)
+static int signal_handler(sd_event_source* s, const struct signalfd_siginfo* si,
+						  void* user)
 {
 	LOG_INF("Received signal, shutting down...");
 
@@ -51,7 +51,8 @@ static int signal_handler(sd_event_source *s, const struct signalfd_siginfo *si,
 	return 0;
 }
 
-static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* user)
+static int stdin_handler(sd_event_source* s, int fd, uint32_t revents,
+						 void* user)
 {
 	int* wfd = user;
 	char buffer[21];
@@ -68,7 +69,7 @@ static int stdin_handler(sd_event_source* s, int fd, uint32_t revents, void* use
 	return 0;
 }
 
-static void log_handler(enum loglevel ll, const char *fmt, va_list ap)
+static void log_handler(enum loglevel ll, const char* fmt, va_list ap)
 {
 	printf("blz: ");
 	vprintf(fmt, ap);
@@ -77,11 +78,11 @@ static void log_handler(enum loglevel ll, const char *fmt, va_list ap)
 
 int main(int argc, char** argv)
 {
-	blz* blz = NULL;	// blz context
-	blz_dev* dev = NULL;	// device we connect to
-	blz_char* wch = NULL;	// characteristic to write to
-	blz_char* rch = NULL;	// characteristic we read from
-	sd_bus* sdbus = NULL;	// sd-bus object for sd-event
+	blz* blz = NULL;	  // blz context
+	blz_dev* dev = NULL;  // device we connect to
+	blz_char* wch = NULL; // characteristic to write to
+	blz_char* rch = NULL; // characteristic we read from
+	sd_bus* sdbus = NULL; // sd-bus object for sd-event
 
 	if (argv[1] == NULL) {
 		LOG_ERR("Pass MAC address of device to connect to");
@@ -137,9 +138,9 @@ int main(int argc, char** argv)
 
 	/* Use SD Event loop */
 	sd_event_default(&event);
-        sd_event_add_signal(event, NULL, SIGTERM, signal_handler, sdbus);
-        sd_event_add_signal(event, NULL, SIGINT, signal_handler, sdbus);
-	sd_event_add_io(event, NULL, STDIN_FILENO,  EPOLLIN, stdin_handler, &wfd);
+	sd_event_add_signal(event, NULL, SIGTERM, signal_handler, sdbus);
+	sd_event_add_signal(event, NULL, SIGINT, signal_handler, sdbus);
+	sd_event_add_io(event, NULL, STDIN_FILENO, EPOLLIN, stdin_handler, &wfd);
 	sd_bus_attach_event(sdbus, event, SD_EVENT_PRIORITY_NORMAL);
 
 	LOG_INF("Connected! Enter commands:");

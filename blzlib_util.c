@@ -7,11 +7,11 @@
 
 #define _GNU_SOURCE
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "blzlib_util.h"
 #include "blzlib_log.h"
+#include "blzlib_util.h"
 
 bool blz_string_to_mac(const char* str, uint8_t mac[6])
 {
@@ -39,10 +39,12 @@ const char* blz_mac_to_string_s(const uint8_t mac[6])
 
 bool blz_string_to_uuid(const char* str, uint8_t uuid[16])
 {
-	int n = sscanf(str, "%2hhx%2hhx%2hhx%2hhx-%2hhx%2hhx-%2hhx%2hhx-%2hhx%2hhx-%2hhx%2hhx%2hhx%2hhx%2hhx%2hhx",
-				uuid + 15, uuid + 14, uuid + 13, uuid + 12, uuid + 11, uuid + 10,
-				uuid + 9, uuid + 8, uuid + 7, uuid + 6, uuid + 5, uuid + 4,
-				uuid + 3, uuid + 2, uuid + 1, uuid);
+	int n = sscanf(str,
+				   "%2hhx%2hhx%2hhx%2hhx-%2hhx%2hhx-%2hhx%2hhx-%2hhx%2hhx-%"
+				   "2hhx%2hhx%2hhx%2hhx%2hhx%2hhx",
+				   uuid + 15, uuid + 14, uuid + 13, uuid + 12, uuid + 11,
+				   uuid + 10, uuid + 9, uuid + 8, uuid + 7, uuid + 6, uuid + 5,
+				   uuid + 4, uuid + 3, uuid + 2, uuid + 1, uuid);
 	return (n == 16);
 }
 
@@ -56,10 +58,12 @@ uint8_t* blz_string_to_uuid_s(const char* str)
 char* blz_uuid_to_string_s(const uint8_t* uuid)
 {
 	static char buf[37];
-	int r = sprintf(buf, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-				uuid[15], uuid[14], uuid[13], uuid[12], uuid[11], uuid[10],
-				uuid[9], uuid[8], uuid[7], uuid[6], uuid[5], uuid[4],
-				uuid[3], uuid[2], uuid[1], uuid[0]);
+	int r = sprintf(
+		buf,
+		"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		uuid[15], uuid[14], uuid[13], uuid[12], uuid[11], uuid[10], uuid[9],
+		uuid[8], uuid[7], uuid[6], uuid[5], uuid[4], uuid[3], uuid[2], uuid[1],
+		uuid[0]);
 	if (r <= 0) {
 		return NULL;
 	}
@@ -69,10 +73,12 @@ char* blz_uuid_to_string_s(const uint8_t* uuid)
 char* blz_uuid_to_string_a(const uint8_t* uuid)
 {
 	char* str;
-	int r = asprintf(&str, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-				uuid[15], uuid[14], uuid[13], uuid[12], uuid[11], uuid[10],
-				uuid[9], uuid[8], uuid[7], uuid[6], uuid[5], uuid[4],
-				uuid[3], uuid[2], uuid[1], uuid[0]);
+	int r = asprintf(
+		&str,
+		"%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+		uuid[15], uuid[14], uuid[13], uuid[12], uuid[11], uuid[10], uuid[9],
+		uuid[8], uuid[7], uuid[6], uuid[5], uuid[4], uuid[3], uuid[2], uuid[1],
+		uuid[0]);
 	if (r <= 0) {
 		return NULL;
 	}

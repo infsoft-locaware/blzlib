@@ -51,7 +51,8 @@ extern "C" {
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*(x)))
 #endif
 
-#define STD_BASE_UUID "\xfb\x34\x9b\x5f\x80\x00\x00\x80\x00\x10\x00\x00\x00\x00\x00\x00"
+#define STD_BASE_UUID                                                          \
+	"\xfb\x34\x9b\x5f\x80\x00\x00\x80\x00\x10\x00\x00\x00\x00\x00\x00"
 
 /* big endian human readable with ':' to little endian */
 bool blz_string_to_mac(const char* str, uint8_t mac[6]);

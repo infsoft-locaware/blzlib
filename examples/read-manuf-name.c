@@ -27,7 +27,8 @@ int main(int argc, char** argv)
 	if (!dev)
 		goto exit;
 
-	blz_serv* srv = blz_get_serv_from_uuid(dev, "0000180a-0000-1000-8000-00805f9b34fb");
+	blz_serv* srv
+		= blz_get_serv_from_uuid(dev, "0000180a-0000-1000-8000-00805f9b34fb");
 	if (!srv) {
 		goto exit;
 	}

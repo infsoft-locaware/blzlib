@@ -25,7 +25,8 @@ typedef struct blz_serv blz_serv;
 
 typedef void (*blz_notify_handler_t)(const uint8_t* data, size_t len,
 									 blz_char* ch);
-typedef void (*blz_scan_handler_t)(const uint8_t* mac, int8_t rssi, const uint8_t* data, size_t len);
+typedef void (*blz_scan_handler_t)(const uint8_t* mac, int8_t rssi,
+								   const uint8_t* data, size_t len);
 typedef void (*blz_disconn_handler_t)(void);
 
 blz* blz_init(const char* dev);

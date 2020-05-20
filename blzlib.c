@@ -5,17 +5,17 @@
  * Version 3. See the file COPYING for more details.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <time.h>
 #include <systemd/sd-bus.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "blzlib.h"
 #include "blzlib_internal.h"
-#include "blzlib_util.h"
 #include "blzlib_log.h"
+#include "blzlib_util.h"
 
 blz* blz_init(const char* dev)
 {
@@ -45,11 +45,8 @@ blz* blz_init(const char* dev)
 	}
 
 	/* power on if necessary */
-	r = sd_bus_set_property(ctx->bus,
-		"org.bluez", ctx->path,
-		"org.bluez.Adapter1",
-		"Powered",
-		 &error, "b", 1);
+	r = sd_bus_set_property(ctx->bus, "org.bluez", ctx->path,
+							"org.bluez.Adapter1", "Powered", &error, "b", 1);
 
 	if (r < 0) {
 		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_OBJECT)) {
@@ -84,11 +81,9 @@ bool blz_known_devices(blz* ctx, blz_scan_handler_t cb)
 
 	ctx->scan_cb = cb;
 
-	r = sd_bus_call_method(ctx->bus,
-		"org.bluez", "/",
-		"org.freedesktop.DBus.ObjectManager",
-		"GetManagedObjects",
-		&error, &reply, "");
+	r = sd_bus_call_method(ctx->bus, "org.bluez", "/",
+						   "org.freedesktop.DBus.ObjectManager",
+						   "GetManagedObjects", &error, &reply, "");
 
 	if (r < 0) {
 		LOG_ERR("Failed to get managed objects: %s", error.message);
@@ -124,22 +119,18 @@ bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
 
 	ctx->scan_cb = cb;
 
-	r = sd_bus_match_signal(ctx->bus, &ctx->scan_slot,
-		"org.bluez", "/",
-		"org.freedesktop.DBus.ObjectManager",
-		"InterfacesAdded",
-		blz_intf_cb, ctx);
+	r = sd_bus_match_signal(ctx->bus, &ctx->scan_slot, "org.bluez", "/",
+							"org.freedesktop.DBus.ObjectManager",
+							"InterfacesAdded", blz_intf_cb, ctx);
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to notify");
 		goto exit;
 	}
 
-	r = sd_bus_call_method(ctx->bus,
-		"org.bluez", ctx->path,
-		"org.bluez.Adapter1",
-		"StartDiscovery",
-		&error, NULL, "");
+	r = sd_bus_call_method(ctx->bus, "org.bluez", ctx->path,
+						   "org.bluez.Adapter1", "StartDiscovery", &error, NULL,
+						   "");
 
 	if (r < 0) {
 		LOG_ERR("BLZ failed to scan: %s", error.message);
@@ -155,11 +146,9 @@ bool blz_scan_stop(blz* ctx)
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int r;
 
-	r = sd_bus_call_method(ctx->bus,
-		"org.bluez", ctx->path,
-		"org.bluez.Adapter1",
-		"StopDiscovery",
-		&error, NULL, "");
+	r = sd_bus_call_method(ctx->bus, "org.bluez", ctx->path,
+						   "org.bluez.Adapter1", "StopDiscovery", &error, NULL,
+						   "");
 
 	if (r < 0) {
 		LOG_ERR("BLZ failed to stop scan: %s", error.message);
@@ -186,7 +175,8 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	return 0;
 }
 
-static int connect_known_cb(sd_bus_message *reply, void *userdata, sd_bus_error *error)
+static int connect_known_cb(sd_bus_message* reply, void* userdata,
+							sd_bus_error* error)
 {
 	int r = 0;
 	blz_dev* dev = (blz_dev*)userdata;
@@ -196,11 +186,10 @@ static int connect_known_cb(sd_bus_message *reply, void *userdata, sd_bus_error 
 		return -1;
 	}
 
-	const sd_bus_error *err = sd_bus_message_get_error(reply);
+	const sd_bus_error* err = sd_bus_message_get_error(reply);
 	if (err != NULL) {
 		r = -sd_bus_message_get_errno(reply);
-		LOG_INF("BLZ connect error: %s '%s' (%d)",
-			err->name, err->message, r);
+		LOG_INF("BLZ connect error: %s '%s' (%d)", err->name, err->message, r);
 	}
 
 	dev->connect_async_result = r;
@@ -208,16 +197,14 @@ static int connect_known_cb(sd_bus_message *reply, void *userdata, sd_bus_error 
 	return r;
 }
 
-
 static int blz_connect_known(blz_dev* dev, const char* macstr)
 {
 	int r;
 	sd_bus_message* call = NULL;
 
-	r = sd_bus_message_new_method_call(dev->ctx->bus, &call,
-		"org.bluez", dev->path,
-		"org.bluez.Device1",
-		"Connect");
+	r = sd_bus_message_new_method_call(dev->ctx->bus, &call, "org.bluez",
+									   dev->path, "org.bluez.Device1",
+									   "Connect");
 
 	if (r < 0) {
 		LOG_ERR("BLZ connect failed to create message: %d", r);
@@ -229,7 +216,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 	/* call it async because it can take longer than the normal sd_bus
 	 * timeout and we want to wait until it is finished or failed */
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_known_cb, dev,
-			      CONNECT_TIMEOUT * 1000000);
+						  CONNECT_TIMEOUT * 1000000);
 
 	if (r < 0) {
 		LOG_ERR("BLZ connect failed: %d", r);
@@ -238,7 +225,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 
 	/* wait for callback */
 	r = blz_loop_timeout(dev->ctx, &dev->connect_async_done,
-			     CONNECT_TIMEOUT * 1000);
+						 CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect timeout");
 	} else {
@@ -250,7 +237,8 @@ exit:
 	return r;
 }
 
-static int connect_new_cb(sd_bus_message *reply, void *userdata, sd_bus_error *error)
+static int connect_new_cb(sd_bus_message* reply, void* userdata,
+						  sd_bus_error* error)
 {
 	int r;
 	char* opath;
@@ -261,16 +249,16 @@ static int connect_new_cb(sd_bus_message *reply, void *userdata, sd_bus_error *e
 		return -1;
 	}
 
-	const sd_bus_error *err = sd_bus_message_get_error(reply);
+	const sd_bus_error* err = sd_bus_message_get_error(reply);
 	if (err != NULL) {
 		if (sd_bus_error_has_name(err, SD_BUS_ERROR_UNKNOWN_METHOD)) {
 			LOG_NOTI("BLZ connect new failed: Bluez < 5.49 (with -E"
-				 " flag) doesn't support ConnectDevice");
+					 " flag) doesn't support ConnectDevice");
 			r = -2;
 		} else {
 			r = -sd_bus_message_get_errno(reply);
-			LOG_INF("BLZ connect new error: %s '%s' (%d)",
-				err->name, err->message, r);
+			LOG_INF("BLZ connect new error: %s '%s' (%d)", err->name,
+					err->message, r);
 		}
 		goto exit;
 	}
@@ -282,8 +270,8 @@ static int connect_new_cb(sd_bus_message *reply, void *userdata, sd_bus_error *e
 	}
 
 	if (strcmp(opath, dev->path) != 0) {
-		LOG_ERR("BLZ connect new device paths don't match (%s %s)",
-			opath, dev->path);
+		LOG_ERR("BLZ connect new device paths don't match (%s %s)", opath,
+				dev->path);
 		r = -1;
 		goto exit;
 	}
@@ -299,12 +287,12 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	int r;
 	sd_bus_message* call = NULL;
 
-	LOG_INF("Connect new to %s (%s)", macstr, addr_public ? "public" : "random");
+	LOG_INF("Connect new to %s (%s)", macstr,
+			addr_public ? "public" : "random");
 
-	r = sd_bus_message_new_method_call(dev->ctx->bus, &call,
-		"org.bluez", dev->ctx->path,
-		"org.bluez.Adapter1",
-		"ConnectDevice");
+	r = sd_bus_message_new_method_call(dev->ctx->bus, &call, "org.bluez",
+									   dev->ctx->path, "org.bluez.Adapter1",
+									   "ConnectDevice");
 
 	if (r < 0) {
 		LOG_ERR("BLZ connect new failed to create message");
@@ -326,7 +314,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	/* AddressType must either be public or random for BLE, otherwise a
 	 * Bluetooth classic connection (BR/EDR) is attempted */
 	r = msg_append_property(call, "AddressType", 's',
-				addr_public ? "public" : "random");
+							addr_public ? "public" : "random");
 	if (r < 0) {
 		goto exit;
 	}
@@ -344,7 +332,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	 * call it async because it can take longer than the normal sd_bus
 	 * timeout and we want to wait until it is finished or failed */
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_new_cb, dev,
-			      CONNECT_TIMEOUT * 1000000);
+						  CONNECT_TIMEOUT * 1000000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect new failed: %d", r);
 		goto exit;
@@ -352,7 +340,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 
 	/* wait for callback */
 	r = blz_loop_timeout(dev->ctx, &dev->connect_async_done,
-			     CONNECT_TIMEOUT * 1000);
+						 CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect new timeout");
 	} else {
@@ -365,7 +353,7 @@ exit:
 }
 
 blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
-		     blz_disconn_handler_t cb)
+					 blz_disconn_handler_t cb)
 {
 	int r;
 	uint8_t mac[6];
@@ -386,8 +374,8 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 	/* create device path based on MAC address */
 	blz_string_to_mac(macstr, mac);
 	r = snprintf(dev->path, DBUS_PATH_MAX_LEN,
-			"%s/dev_%02X_%02X_%02X_%02X_%02X_%02X",
-			ctx->path, mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
+				 "%s/dev_%02X_%02X_%02X_%02X_%02X_%02X", ctx->path, mac[5],
+				 mac[4], mac[3], mac[2], mac[1], mac[0]);
 
 	if (r < 0 || r >= DBUS_PATH_MAX_LEN) {
 		LOG_ERR("BLZ connect failed to construct device path");
@@ -397,12 +385,9 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 
 	/* check if it already is connected. this also serves as a mean to check
 	 * wether the object path is known in DBus */
-	r = sd_bus_get_property_trivial(dev->ctx->bus,
-			"org.bluez",
-			dev->path,
-			"org.bluez.Device1",
-			"Connected",
-			&error, 'b', &conn_status);
+	r = sd_bus_get_property_trivial(dev->ctx->bus, "org.bluez", dev->path,
+									"org.bluez.Device1", "Connected", &error,
+									'b', &conn_status);
 
 	if (r < 0) {
 		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_OBJECT)) {
@@ -418,15 +403,11 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 		LOG_NOTI("Device %s already was connected", macstr);
 		/* get ServicesResolved status */
 		int sr;
-		r = sd_bus_get_property_trivial(dev->ctx->bus,
-			"org.bluez",
-			dev->path,
-			"org.bluez.Device1",
-			"ServicesResolved",
-			&error, 'b', &sr);
+		r = sd_bus_get_property_trivial(dev->ctx->bus, "org.bluez", dev->path,
+										"org.bluez.Device1", "ServicesResolved",
+										&error, 'b', &sr);
 		if (r < 0) {
-			LOG_ERR("BLZ failed to get ServicesResolved: %s",
-				error.message);
+			LOG_ERR("BLZ failed to get ServicesResolved: %s", error.message);
 			need_disconnect = true;
 			goto exit;
 		}
@@ -437,11 +418,9 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 	}
 
 	/* connect signal for device properties changed */
-	r = sd_bus_match_signal(ctx->bus, &dev->connect_slot,
-		"org.bluez", dev->path,
-		"org.freedesktop.DBus.Properties",
-		"PropertiesChanged",
-		blz_connect_cb, dev);
+	r = sd_bus_match_signal(ctx->bus, &dev->connect_slot, "org.bluez",
+							dev->path, "org.freedesktop.DBus.Properties",
+							"PropertiesChanged", blz_connect_cb, dev);
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to add connect signal");
@@ -455,11 +434,11 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 		r = blz_connect_known(dev, macstr);
 	} else if (conn_status == -1) {
 		r = blz_connect_new(dev, macstr,
-				    atype == BLZ_ADDR_PUBLIC ? true : false);
+							atype == BLZ_ADDR_PUBLIC ? true : false);
 		/* when addr type is unknown and connect failed, try the other type */
 		if (r < 0 && atype == BLZ_ADDR_UNKNOWN) {
 			r = blz_connect_new(dev, macstr,
-					    atype == BLZ_ADDR_PUBLIC ? false : true);
+								atype == BLZ_ADDR_PUBLIC ? false : true);
 		}
 	}
 
@@ -475,7 +454,7 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 	 * we usually receive connected = true before that, but at that time we
 	 * are not ready yet to look up service and characteristic UUIDs */
 	r = blz_loop_timeout(ctx, &dev->services_resolved,
-			     SERV_RESOLV_TIMEOUT * 1000);
+						 SERV_RESOLV_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
 		need_disconnect = true;
@@ -508,11 +487,9 @@ static bool find_serv_by_uuid(blz_serv* srv)
 	sd_bus_message* reply = NULL;
 	int r;
 
-	r = sd_bus_call_method(srv->ctx->bus,
-		"org.bluez", "/",
-		"org.freedesktop.DBus.ObjectManager",
-		"GetManagedObjects",
-		&error, &reply, "");
+	r = sd_bus_call_method(srv->ctx->bus, "org.bluez", "/",
+						   "org.freedesktop.DBus.ObjectManager",
+						   "GetManagedObjects", &error, &reply, "");
 
 	if (r < 0) {
 		LOG_ERR("Failed to get managed objects: %s", error.message);
@@ -557,12 +534,9 @@ char** blz_list_service_uuids(blz_dev* dev)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 
-	int r = sd_bus_get_property_strv(dev->ctx->bus,
-			"org.bluez",
-			dev->path,
-			"org.bluez.Device1",
-			"UUIDs",
-			&error, &dev->service_uuids);
+	int r = sd_bus_get_property_strv(dev->ctx->bus, "org.bluez", dev->path,
+									 "org.bluez.Device1", "UUIDs", &error,
+									 &dev->service_uuids);
 
 	if (r < 0) {
 		LOG_ERR("couldnt get services: %s", error.message);
@@ -586,11 +560,8 @@ void blz_disconnect(blz_dev* dev)
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int r;
 
-	r = sd_bus_call_method(dev->ctx->bus,
-		"org.bluez", dev->path,
-		"org.bluez.Device1",
-		"Disconnect",
-		&error, NULL, "");
+	r = sd_bus_call_method(dev->ctx->bus, "org.bluez", dev->path,
+						   "org.bluez.Device1", "Disconnect", &error, NULL, "");
 
 	if (r < 0) {
 		LOG_ERR("BLZ failed to disconnect: %s", error.message);
@@ -599,15 +570,16 @@ void blz_disconnect(blz_dev* dev)
 	sd_bus_error_free(&error);
 
 	/* free */
-	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL; i++) {
+	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL;
+		 i++) {
 		free(dev->service_uuids[i]);
 	}
 	free(dev->service_uuids);
 
-	//for (int i = 0; dev->char_uuids != NULL && dev->char_uuids[i] != NULL; i++) {
-	//	free(dev->char_uuids[i]);
+	// for (int i = 0; dev->char_uuids != NULL && dev->char_uuids[i] != NULL;
+	// i++) { 	free(dev->char_uuids[i]);
 	//}
-	//free(dev->char_uuids);
+	// free(dev->char_uuids);
 
 	free(dev);
 }
@@ -618,11 +590,9 @@ static bool find_char_by_uuid(blz_char* ch)
 	sd_bus_message* reply = NULL;
 	int r;
 
-	r = sd_bus_call_method(ch->ctx->bus,
-		"org.bluez", "/",
-		"org.freedesktop.DBus.ObjectManager",
-		"GetManagedObjects",
-		&error, &reply, "");
+	r = sd_bus_call_method(ch->ctx->bus, "org.bluez", "/",
+						   "org.freedesktop.DBus.ObjectManager",
+						   "GetManagedObjects", &error, &reply, "");
 
 	if (r < 0) {
 		LOG_ERR("Failed to get managed objects: %s", error.message);
@@ -644,11 +614,9 @@ char** blz_list_char_uuids(blz_serv* srv)
 	sd_bus_message* reply = NULL;
 	int r;
 
-	r = sd_bus_call_method(srv->ctx->bus,
-		"org.bluez", "/",
-		"org.freedesktop.DBus.ObjectManager",
-		"GetManagedObjects",
-		&error, &reply, "");
+	r = sd_bus_call_method(srv->ctx->bus, "org.bluez", "/",
+						   "org.freedesktop.DBus.ObjectManager",
+						   "GetManagedObjects", &error, &reply, "");
 
 	if (r < 0) {
 		LOG_ERR("Failed to get managed objects: %s", error.message);
@@ -663,7 +631,7 @@ char** blz_list_char_uuids(blz_serv* srv)
 	}
 
 	/* alloc space for them */
-	srv->char_uuids = calloc(cnt+1, sizeof(char*));
+	srv->char_uuids = calloc(cnt + 1, sizeof(char*));
 	srv->char_uuids[cnt] = NULL;
 	if (srv->char_uuids == NULL) {
 		LOG_ERR("BLZ alloc of chars failed");
@@ -721,10 +689,9 @@ bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len)
 		return false;
 	}
 
-	r = sd_bus_message_new_method_call(ch->ctx->bus, &call,
-		"org.bluez", ch->path,
-		"org.bluez.GattCharacteristic1",
-		"WriteValue");
+	r = sd_bus_message_new_method_call(
+		ch->ctx->bus, &call, "org.bluez", ch->path,
+		"org.bluez.GattCharacteristic1", "WriteValue");
 
 	if (r < 0) {
 		LOG_ERR("BLZ write failed to create message");
@@ -775,11 +742,9 @@ int blz_char_read(blz_char* ch, uint8_t* data, size_t len)
 		return false;
 	}
 
-	r = sd_bus_call_method(ch->ctx->bus,
-		"org.bluez", ch->path,
-		"org.bluez.GattCharacteristic1",
-		"ReadValue",
-		&error, &reply, "a{sv}", 0);
+	r = sd_bus_call_method(ch->ctx->bus, "org.bluez", ch->path,
+						   "org.bluez.GattCharacteristic1", "ReadValue", &error,
+						   &reply, "a{sv}", 0);
 
 	if (r < 0) {
 		LOG_ERR("BLZ failed to read: %s", error.message);
@@ -836,22 +801,18 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
 
 	ch->notify_cb = cb;
 
-	r = sd_bus_match_signal(ch->ctx->bus, &ch->notify_slot,
-		"org.bluez", ch->path,
-		"org.freedesktop.DBus.Properties",
-		"PropertiesChanged",
-		blz_notify_cb, ch);
+	r = sd_bus_match_signal(ch->ctx->bus, &ch->notify_slot, "org.bluez",
+							ch->path, "org.freedesktop.DBus.Properties",
+							"PropertiesChanged", blz_notify_cb, ch);
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to notify");
 		goto exit;
 	}
 
-	r = sd_bus_call_method(ch->ctx->bus,
-		"org.bluez", ch->path,
-		"org.bluez.GattCharacteristic1",
-		"StartNotify",
-		&error, &reply, "");
+	r = sd_bus_call_method(ch->ctx->bus, "org.bluez", ch->path,
+						   "org.bluez.GattCharacteristic1", "StartNotify",
+						   &error, &reply, "");
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to start notify: %s", error.message);
@@ -879,11 +840,9 @@ bool blz_char_notify_stop(blz_char* ch)
 		return false;
 	}
 
-	r = sd_bus_call_method(ch->ctx->bus,
-		"org.bluez", ch->path,
-		"org.bluez.GattCharacteristic1",
-		"StopNotify",
-		&error, &reply, "");
+	r = sd_bus_call_method(ch->ctx->bus, "org.bluez", ch->path,
+						   "org.bluez.GattCharacteristic1", "StopNotify",
+						   &error, &reply, "");
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed to stop notify: %s", error.message);
@@ -909,12 +868,9 @@ int blz_char_write_fd_acquire(blz_char* ch)
 		return -1;
 	}
 
-	r = sd_bus_call_method(ch->ctx->bus,
-		"org.bluez", ch->path,
-		"org.bluez.GattCharacteristic1",
-		"AcquireWrite",
-		&error, &reply,
-		"a{sv}", 0);
+	r = sd_bus_call_method(ch->ctx->bus, "org.bluez", ch->path,
+						   "org.bluez.GattCharacteristic1", "AcquireWrite",
+						   &error, &reply, "a{sv}", 0);
 
 	if (r < 0) {
 		LOG_ERR("BLZ Failed acquire write: %s", error.message);

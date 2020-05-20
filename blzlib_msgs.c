@@ -15,7 +15,8 @@
 #include "blzlib_log.h"
 #include "blzlib_util.h"
 
-static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_char* ch)
+static int msg_parse_characteristic1(sd_bus_message* m, const char* opath,
+									 blz_char* ch)
 {
 	const char* str;
 	const char* uuid;
@@ -29,8 +30,7 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 	}
 
 	/* enter next dict */
-	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0)
-	{
+	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0) {
 		/* property name */
 		r = sd_bus_message_read_basic(m, 's', &str);
 		if (r < 0) {
@@ -38,7 +38,7 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 			return r;
 		}
 
-		//LOG_INF("Name %s", str);
+		// LOG_INF("Name %s", str);
 
 		if (strcmp(str, "UUID") == 0) {
 			r = msg_read_variant(m, "s", &uuid);
@@ -78,7 +78,7 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 		return r;
 	}
 
-	//LOG_INF("UUID %s", uuid);
+	// LOG_INF("UUID %s", uuid);
 
 	/* if UUID matched or if UUID was empty (match all) */
 	if (ch->uuid[0] == '\0' || strcasecmp(uuid, ch->uuid) == 0) {
@@ -119,7 +119,8 @@ static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_c
 	return r;
 }
 
-static int msg_parse_service1(sd_bus_message* m, const char* opath, blz_serv* srv)
+static int msg_parse_service1(sd_bus_message* m, const char* opath,
+							  blz_serv* srv)
 {
 	const char* str;
 	const char* uuid;
@@ -132,8 +133,7 @@ static int msg_parse_service1(sd_bus_message* m, const char* opath, blz_serv* sr
 	}
 
 	/* enter next dict */
-	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0)
-	{
+	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0) {
 		/* property name */
 		r = sd_bus_message_read_basic(m, 's', &str);
 		if (r < 0) {
@@ -141,7 +141,7 @@ static int msg_parse_service1(sd_bus_message* m, const char* opath, blz_serv* sr
 			return r;
 		}
 
-		//LOG_INF("serv Name %s", str);
+		// LOG_INF("serv Name %s", str);
 
 		if (strcmp(str, "UUID") == 0) {
 			r = msg_read_variant(m, "s", &uuid);
@@ -177,7 +177,7 @@ static int msg_parse_service1(sd_bus_message* m, const char* opath, blz_serv* sr
 		return r;
 	}
 
-	//LOG_INF("Serv UUID %s path %s", uuid, opath);
+	// LOG_INF("Serv UUID %s path %s", uuid, opath);
 
 	/* if UUID matched or if UUID was empty (match all) */
 	if (srv->uuid[0] == '\0' || strcasecmp(uuid, srv->uuid) == 0) {
@@ -205,8 +205,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 	}
 
 	/* enter next dict */
-	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0)
-	{
+	while ((r = sd_bus_message_enter_container(m, 'e', "sv")) > 0) {
 		/* property name */
 		r = sd_bus_message_read_basic(m, 's', &str);
 		if (r < 0) {
@@ -214,7 +213,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 			return r;
 		}
 
-		//LOG_INF("Name %s", str);
+		// LOG_INF("Name %s", str);
 
 		if (strcmp(str, "Name") == 0) {
 			r = msg_read_variant(m, "s", &str);
@@ -222,21 +221,18 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 				return r;
 			}
 			strncpy(dev->name, str, NAME_STR_LEN);
-		}
-		else if (strcmp(str, "Address") == 0) {
+		} else if (strcmp(str, "Address") == 0) {
 			r = msg_read_variant(m, "s", &str);
 			if (r < 0) {
 				return r;
 			}
 			blz_string_to_mac(str, dev->mac);
-		}
-		else if (strcmp(str, "UUIDs") == 0) {
+		} else if (strcmp(str, "UUIDs") == 0) {
 			r = msg_read_variant_strv(m, &dev->service_uuids);
 			if (r < 0) {
 				return r;
 			}
-		}
-		else if (strcmp(str, "ServicesResolved") == 0) {
+		} else if (strcmp(str, "ServicesResolved") == 0) {
 			/* note: bool in sd-dbus is expected to be int type */
 			int b;
 			r = msg_read_variant(m, "b", &b);
@@ -244,8 +240,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 				return r;
 			}
 			dev->services_resolved = b;
-		}
-		else if (strcmp(str, "Connected") == 0) {
+		} else if (strcmp(str, "Connected") == 0) {
 			/* note: bool in sd-dbus is expected to be int type */
 			int b;
 			r = msg_read_variant(m, "b", &b);
@@ -256,15 +251,13 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 			if (dev->disconnect_cb && !b) {
 				dev->disconnect_cb();
 			}
-		}
-		else if (strcmp(str, "RSSI") == 0) {
+		} else if (strcmp(str, "RSSI") == 0) {
 			int b;
 			r = msg_read_variant(m, "n", &dev->rssi);
 			if (r < 0) {
 				return r;
 			}
-		}
-		else {
+		} else {
 			r = sd_bus_message_skip(m, "v");
 			if (r < 0) {
 				LOG_ERR("BLZ error parse dev 15");
@@ -295,7 +288,8 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 	return r;
 }
 
-int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, void* user)
+int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath,
+						void* user)
 {
 	const char* intf;
 
@@ -310,13 +304,13 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		/* find service by UUID, returns RETURN_FOUND if found, user
 		 * points to a blz_serv where the UUID to look for is filled */
 		r = msg_parse_service1(m, opath, user);
-	}
-	else if (act == MSG_CHAR_FIND && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+	} else if (act == MSG_CHAR_FIND
+			   && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		/* find char by UUID, returns RETURN_FOUND if found, user
 		 * points to a blz_char where the UUID to look for is filled */
 		r = msg_parse_characteristic1(m, opath, user);
-	}
-	else if (act == MSG_CHAR_COUNT && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+	} else if (act == MSG_CHAR_COUNT
+			   && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		/* just count the times the GattCharacteristic1 interface was
 		 * found, user just is an int pointer */
 		int* cnt = user;
@@ -325,8 +319,8 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		if (r < 0) {
 			LOG_ERR("BLZ error parse 1intf 2");
 		}
-	}
-	else if (act == MSG_CHARS_ALL && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
+	} else if (act == MSG_CHARS_ALL
+			   && strcmp(intf, "org.bluez.GattCharacteristic1") == 0) {
 		/* get UUIDs from all characteristics. user points to the service
 		 * where enough space for them has already been allocated */
 		blz_serv* srv = user;
@@ -339,12 +333,11 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		srv->char_uuids[srv->chars_idx] = strdup(ch.uuid);
 		srv->chars_idx++;
 		return 0; // override RETURN_FOUND this would stop the loop
-	}
-	else if (act == MSG_DEVICE && strcmp(intf, "org.bluez.Device1") == 0) {
+	} else if (act == MSG_DEVICE && strcmp(intf, "org.bluez.Device1") == 0) {
 		/* parse device properties, user points to device */
 		r = msg_parse_device1(m, opath, user);
-	}
-	else if (act == MSG_DEVICE_SCAN && strcmp(intf, "org.bluez.Device1") == 0) {
+	} else if (act == MSG_DEVICE_SCAN
+			   && strcmp(intf, "org.bluez.Device1") == 0) {
 		/* used in scan callback. user points to a blz* where the scan_cb
 		 * can be found. create a temporary device, parse all info into
 		 * it and then call callback */
@@ -361,12 +354,12 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		}
 
 		/* free uuids of temporary device */
-		for (int i = 0; dev.service_uuids != NULL && dev.service_uuids[i] != NULL; i++) {
+		for (int i = 0;
+			 dev.service_uuids != NULL && dev.service_uuids[i] != NULL; i++) {
 			free(dev.service_uuids[i]);
 		}
 		free(dev.service_uuids);
-	}
-	else {
+	} else {
 		/* unknown interface or action */
 		r = sd_bus_message_skip(m, "a{sv}");
 		if (r < 0) {
@@ -376,7 +369,8 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 	return r;
 }
 
-static int msg_parse_interfaces(sd_bus_message* m, enum msg_act act, const char* opath, void* user)
+static int msg_parse_interfaces(sd_bus_message* m, enum msg_act act,
+								const char* opath, void* user)
 {
 	/* enter array of interface names with array of properties */
 	int r = sd_bus_message_enter_container(m, 'a', "{sa{sv}}");
@@ -386,8 +380,7 @@ static int msg_parse_interfaces(sd_bus_message* m, enum msg_act act, const char*
 	}
 
 	/* enter next dict entry */
-	while ((r = sd_bus_message_enter_container(m, 'e', "sa{sv}")) > 0)
-	{
+	while ((r = sd_bus_message_enter_container(m, 'e', "sa{sv}")) > 0) {
 		r = msg_parse_interface(m, act, opath, user);
 		if (r < 0 || r == RETURN_FOUND) {
 			return r;
@@ -408,14 +401,15 @@ static int msg_parse_interfaces(sd_bus_message* m, enum msg_act act, const char*
 
 	/* exit array */
 	r = sd_bus_message_exit_container(m);
-        if (r < 0) {
+	if (r < 0) {
 		LOG_ERR("BLZ error parse intf 4");
 		return r;
 	}
 	return r;
 }
 
-int msg_parse_object(sd_bus_message* m, const char* match_path, enum msg_act act, void* user)
+int msg_parse_object(sd_bus_message* m, const char* match_path,
+					 enum msg_act act, void* user)
 {
 	const char* opath;
 
@@ -441,18 +435,18 @@ int msg_parse_object(sd_bus_message* m, const char* match_path, enum msg_act act
 	return r;
 }
 
-int msg_parse_objects(sd_bus_message* m, const char* match_path, enum msg_act act, void* user)
+int msg_parse_objects(sd_bus_message* m, const char* match_path,
+					  enum msg_act act, void* user)
 {
 	/* enter array of objects */
 	int r = sd_bus_message_enter_container(m, 'a', "{oa{sa{sv}}}");
-        if (r < 0) {
+	if (r < 0) {
 		LOG_ERR("BLZ error parse obj 1");
-                return r;
+		return r;
 	}
 
 	/* enter next dict/object */
-	while ((r = sd_bus_message_enter_container(m, 'e', "oa{sa{sv}}")) > 0)
-	{
+	while ((r = sd_bus_message_enter_container(m, 'e', "oa{sa{sv}}")) > 0) {
 		r = msg_parse_object(m, match_path, act, user);
 		if (r < 0 || r == RETURN_FOUND) {
 			return r;
@@ -479,7 +473,8 @@ int msg_parse_objects(sd_bus_message* m, const char* match_path, enum msg_act ac
 	return r;
 }
 
-int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* len)
+int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr,
+					 size_t* len)
 {
 	int r;
 	char* str;
@@ -550,7 +545,8 @@ int msg_parse_notify(sd_bus_message* m, blz_char* ch, const void** ptr, size_t* 
 	return r;
 }
 
-int msg_append_property(sd_bus_message* m, const char* name, char type, const void* value)
+int msg_append_property(sd_bus_message* m, const char* name, char type,
+						const void* value)
 {
 	/* open dict */
 	int r = sd_bus_message_open_container(m, 'e', "sv");
