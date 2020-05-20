@@ -36,13 +36,14 @@ struct blz_serv {
 struct blz_dev {
 	struct blz_context*	ctx;
 	char			path[DBUS_PATH_MAX_LEN];
-	char			mac[MAC_STR_LEN];
+	uint8_t			mac[6];
 	char			name[NAME_STR_LEN];
 	sd_bus_slot*		connect_slot;
 	bool			connect_async_done;
 	int			connect_async_result;
 	bool			connected;
 	bool			services_resolved;
+	int16_t			rssi;
 	char**			service_uuids;
 	char**			char_uuids;
 	size_t			chars_idx;

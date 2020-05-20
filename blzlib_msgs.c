@@ -13,6 +13,7 @@
 #include "blzlib.h"
 #include "blzlib_internal.h"
 #include "blzlib_log.h"
+#include "blzlib_util.h"
 
 static int msg_parse_characteristic1(sd_bus_message* m, const char* opath, blz_char* ch)
 {
@@ -153,7 +154,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 			if (r < 0) {
 				return r;
 			}
-			strncpy(dev->mac, str, MAC_STR_LEN);
+			blz_string_to_mac(str, dev->mac);
 		}
 		else if (strcmp(str, "UUIDs") == 0) {
 			r = msg_read_variant_strv(m, &dev->service_uuids);
@@ -180,6 +181,13 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 			dev->connected = b;
 			if (dev->disconnect_cb && !b) {
 				dev->disconnect_cb();
+			}
+		}
+		else if (strcmp(str, "RSSI") == 0) {
+			int b;
+			r = msg_read_variant(m, "n", &dev->rssi);
+			if (r < 0) {
+				return r;
 			}
 		}
 		else {
@@ -270,7 +278,7 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath, 
 		/* callback */
 		blz* ctx = user;
 		if (ctx != NULL && ctx->scan_cb != NULL) {
-			ctx->scan_cb(dev.mac, 0, NULL, 0);
+			ctx->scan_cb(dev.mac, dev.rssi, NULL, 0);
 		}
 
 		/* free uuids of temporary device */
