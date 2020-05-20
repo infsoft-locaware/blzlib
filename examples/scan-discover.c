@@ -45,6 +45,10 @@ static void scan_cb(const uint8_t* mac, int8_t rssi, const uint8_t* data,
 
 	LOG_INF("SCAN " MAC_FMT " %d", MAC_PARR(mac), rssi);
 
+	if (data && len > 0) {
+		hex_dump("DATA: ", data, len);
+	}
+
 	for (int i = 0; i < MAX_SCAN && scanned_macs[i] != NULL; i++) {
 		if (memcmp(scanned_macs[i], mac, 6) == 0) {
 			return; // already in list
