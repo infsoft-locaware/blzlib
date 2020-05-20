@@ -252,7 +252,6 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 				dev->disconnect_cb();
 			}
 		} else if (strcmp(str, "RSSI") == 0) {
-			int b;
 			r = msg_read_variant(m, "n", &dev->rssi);
 			if (r < 0) {
 				return r;
