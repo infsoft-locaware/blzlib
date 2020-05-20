@@ -162,6 +162,9 @@ exit:
 	sd_event_unref(event);
 	sd_bus_unref(sdbus);
 	blz_char_notify_stop(rch);
+	blz_char_free(rch);
+	blz_char_free(wch);
+	blz_serv_free(srv);
 	blz_disconnect(dev);
 	blz_fini(blz);
 	close(wfd);

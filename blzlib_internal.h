@@ -26,15 +26,6 @@ struct blz_context {
 	sd_bus_slot*	   scan_slot;
 };
 
-struct blz_serv {
-	struct blz_context* ctx;
-	struct blz_dev*		dev;
-	char				path[DBUS_PATH_MAX_LEN];
-	char				uuid[UUID_STR_LEN];
-	char**				char_uuids;
-	size_t				chars_idx;
-};
-
 struct blz_dev {
 	struct blz_context*	  ctx;
 	char				  path[DBUS_PATH_MAX_LEN];
@@ -48,6 +39,15 @@ struct blz_dev {
 	int16_t				  rssi;
 	char**				  service_uuids;
 	blz_disconn_handler_t disconnect_cb;
+};
+
+struct blz_serv {
+	struct blz_context* ctx;
+	struct blz_dev*		dev;
+	char				path[DBUS_PATH_MAX_LEN];
+	char				uuid[UUID_STR_LEN];
+	char**				char_uuids;
+	size_t				chars_idx;
 };
 
 /* Characteristic Flags (Characteristic Properties bit field) */

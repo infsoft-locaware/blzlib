@@ -23,13 +23,15 @@ static void discover(blz* blz, const char* mac)
 	char** uuids = blz_list_service_uuids(dev);
 
 	for (int i = 0; uuids != NULL && uuids[i] != NULL; i++) {
-		LOG_INF("\t[serv %s]", uuids[i]);
+		LOG_INF("\tService %s", uuids[i]);
 		blz_serv* srv = blz_get_serv_from_uuid(dev, uuids[i]);
 		if (srv) {
 			char** chuuids = blz_list_char_uuids(srv);
 			for (int i = 0; chuuids != NULL && chuuids[i] != NULL; i++) {
-				LOG_INF("\t\t[char %s]", chuuids[i]);
+				LOG_INF("\t\tCharacteristic %s", chuuids[i]);
 			}
+
+			blz_serv_free(srv);
 		}
 	}
 

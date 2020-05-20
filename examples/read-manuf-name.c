@@ -52,6 +52,10 @@ int main(int argc, char** argv)
 	LOG_INF("Manufacturer Name: '%.*s'", len, buf);
 
 exit:
+	/* free pointers */
+	blz_char_free(rch);
+	blz_serv_free(srv);
+
 	/* Disconnect and free resources associated to device */
 	blz_disconnect(dev);
 

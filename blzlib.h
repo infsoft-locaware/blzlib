@@ -38,15 +38,12 @@ bool blz_scan_stop(blz* ctx);
 
 blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 					 blz_disconn_handler_t cb);
-/* this frees dev */
-void blz_disconnect(blz_dev* dev);
 
 /** returns NULL terminated list of service UUID strings, don't free them */
 char** blz_list_service_uuids(blz_dev* dev);
 blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid_srv);
 
-/** returns NULL terminated list of characteristic UUID strings, don't free them
- */
+/** returns NULL terminated list of char UUID strings, don't free them */
 char** blz_list_char_uuids(blz_serv* serv);
 blz_char* blz_get_char_from_uuid(blz_serv* serv, const char* uuid_char);
 
@@ -61,6 +58,11 @@ int blz_char_write_fd_acquire(blz_char* ch);
 
 void blz_loop(blz* ctx, uint64_t timeout_us);
 int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms);
+
+/* this frees dev */
+void blz_disconnect(blz_dev* dev);
+void blz_serv_free(blz_serv* sv);
+void blz_char_free(blz_char* ch);
 
 #ifdef __cplusplus
 }

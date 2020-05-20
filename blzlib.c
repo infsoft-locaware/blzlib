@@ -541,44 +541,6 @@ char** blz_list_service_uuids(blz_dev* dev)
 	return dev->service_uuids;
 }
 
-/** frees dev */
-void blz_disconnect(blz_dev* dev)
-{
-	if (!dev) {
-		return;
-	}
-
-	if (dev->connect_slot) {
-		dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
-	}
-
-	sd_bus_error error = SD_BUS_ERROR_NULL;
-	int r;
-
-	r = sd_bus_call_method(dev->ctx->bus, "org.bluez", dev->path,
-						   "org.bluez.Device1", "Disconnect", &error, NULL, "");
-
-	if (r < 0) {
-		LOG_ERR("BLZ failed to disconnect: %s", error.message);
-	}
-
-	sd_bus_error_free(&error);
-
-	/* free */
-	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL;
-		 i++) {
-		free(dev->service_uuids[i]);
-	}
-	free(dev->service_uuids);
-
-	// for (int i = 0; dev->char_uuids != NULL && dev->char_uuids[i] != NULL;
-	// i++) { 	free(dev->char_uuids[i]);
-	//}
-	// free(dev->char_uuids);
-
-	free(dev);
-}
-
 static bool find_char_by_uuid(blz_char* ch)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
@@ -888,6 +850,56 @@ exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
 	return r;
+}
+
+/** frees dev */
+void blz_disconnect(blz_dev* dev)
+{
+	if (!dev) {
+		return;
+	}
+
+	if (dev->connect_slot) {
+		dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
+	}
+
+	sd_bus_error error = SD_BUS_ERROR_NULL;
+	int r;
+
+	r = sd_bus_call_method(dev->ctx->bus, "org.bluez", dev->path,
+						   "org.bluez.Device1", "Disconnect", &error, NULL, "");
+
+	if (r < 0) {
+		LOG_ERR("BLZ failed to disconnect: %s", error.message);
+	}
+
+	sd_bus_error_free(&error);
+
+	/* free */
+	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL;
+		 i++) {
+		free(dev->service_uuids[i]);
+	}
+	free(dev->service_uuids);
+
+	free(dev);
+}
+
+void blz_serv_free(blz_serv* sv)
+{
+	if (!sv) {
+		return;
+	}
+	for (int i = 0; sv->char_uuids != NULL && sv->char_uuids[i] != NULL; i++) {
+		free(sv->char_uuids[i]);
+	}
+	free(sv->char_uuids);
+	free(sv);
+}
+
+void blz_char_free(blz_char* ch)
+{
+	free(ch);
 }
 
 void blz_loop(blz* ctx, uint64_t timeout_us)
