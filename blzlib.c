@@ -686,6 +686,11 @@ exit:
 	return r >= 0;
 }
 
+bool blz_char_write_cmd(blz_char* ch, const uint8_t* data, size_t len)
+{
+	return blz_char_write(ch, data, len);
+}
+
 int blz_char_read(blz_char* ch, uint8_t* data, size_t len)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
