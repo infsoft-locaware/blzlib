@@ -24,20 +24,23 @@ typedef struct blz_char blz_char;
 typedef struct blz_serv blz_serv;
 
 typedef void (*blz_notify_handler_t)(const uint8_t* data, size_t len,
-									 blz_char* ch);
-typedef void (*blz_scan_handler_t)(const uint8_t* mac, int8_t rssi,
-								   const uint8_t* data, size_t len);
-typedef void (*blz_disconn_handler_t)(void);
+									 blz_char* ch, void* user);
+typedef void (*blz_scan_handler_t)(const uint8_t* mac, enum blz_addr_type atype,
+								   int8_t rssi, const uint8_t* data, size_t len,
+								   void* user);
+typedef void (*blz_disconn_handler_t)(void* user);
 
 blz* blz_init(const char* dev);
 void blz_fini(blz* ctx);
 
-bool blz_known_devices(blz* ctx, blz_scan_handler_t cb);
-bool blz_scan_start(blz* ctx, blz_scan_handler_t cb);
+bool blz_known_devices(blz* ctx, blz_scan_handler_t cb, void* user);
+bool blz_scan_start(blz* ctx, blz_scan_handler_t cb, void* user);
 bool blz_scan_stop(blz* ctx);
 
-blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
-					 blz_disconn_handler_t cb);
+blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype);
+
+void blz_set_disconnect_handler(blz_dev* dev, blz_disconn_handler_t cb,
+								void* user);
 
 /** returns NULL terminated list of service UUID strings, don't free them */
 char** blz_list_service_uuids(blz_dev* dev);
@@ -50,8 +53,8 @@ blz_char* blz_get_char_from_uuid(blz_serv* serv, const char* uuid_char);
 bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len);
 bool blz_char_write_cmd(blz_char* ch, const uint8_t* data, size_t len);
 int blz_char_read(blz_char* ch, uint8_t* data, size_t len);
-bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb);
-bool blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb);
+bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user);
+bool blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb, void* user);
 bool blz_char_notify_stop(blz_char* ch);
 /** returns fd or -1 on error. need to close(fd) to release */
 int blz_char_write_fd_acquire(blz_char* ch);
@@ -63,6 +66,8 @@ int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms);
 void blz_disconnect(blz_dev* dev);
 void blz_serv_free(blz_serv* sv);
 void blz_char_free(blz_char* ch);
+
+int blz_get_fd(blz* ctx);
 
 #ifdef __cplusplus
 }

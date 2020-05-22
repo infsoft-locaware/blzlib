@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 
 	/* Connect to device with MAC address */
 	LOG_INF("Connecting to %s...", argv[1]);
-	dev = blz_connect(blz, argv[1], BLZ_ADDR_UNKNOWN, NULL);
+	dev = blz_connect(blz, argv[1], BLZ_ADDR_UNKNOWN);
 	if (!dev) {
 		goto exit;
 	}

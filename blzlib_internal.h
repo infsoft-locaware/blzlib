@@ -24,6 +24,7 @@ struct blz_context {
 	char			   path[DBUS_PATH_MAX_LEN];
 	blz_scan_handler_t scan_cb;
 	sd_bus_slot*	   scan_slot;
+	void*              scan_user;
 };
 
 struct blz_dev {
@@ -39,6 +40,7 @@ struct blz_dev {
 	int16_t				  rssi;
 	char**				  service_uuids;
 	blz_disconn_handler_t disconnect_cb;
+	void*                 disconn_user;
 };
 
 struct blz_serv {
@@ -69,6 +71,7 @@ struct blz_char {
 	blz_notify_handler_t notify_cb;
 	sd_bus_slot*		 notify_slot;
 	bool				 notifying;
+	void*                notify_user;
 };
 /* clang-format on */
 

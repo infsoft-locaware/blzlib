@@ -73,13 +73,14 @@ void blz_fini(blz* ctx)
 	free(ctx);
 }
 
-bool blz_known_devices(blz* ctx, blz_scan_handler_t cb)
+bool blz_known_devices(blz* ctx, blz_scan_handler_t cb, void* user)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
 	int r;
 
 	ctx->scan_cb = cb;
+	ctx->scan_user = user;
 
 	r = sd_bus_call_method(ctx->bus, "org.bluez", "/",
 						   "org.freedesktop.DBus.ObjectManager",
@@ -112,12 +113,13 @@ static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	return msg_parse_object(m, ctx->path, MSG_DEVICE_SCAN, ctx);
 }
 
-bool blz_scan_start(blz* ctx, blz_scan_handler_t cb)
+bool blz_scan_start(blz* ctx, blz_scan_handler_t cb, void* user)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int r;
 
 	ctx->scan_cb = cb;
+	ctx->scan_user = user;
 
 	r = sd_bus_match_signal(ctx->bus, &ctx->scan_slot, "org.bluez", "/",
 							"org.freedesktop.DBus.ObjectManager",
@@ -156,6 +158,7 @@ bool blz_scan_stop(blz* ctx)
 
 	ctx->scan_slot = sd_bus_slot_unref(ctx->scan_slot);
 	ctx->scan_cb = NULL;
+	ctx->scan_user = NULL;
 
 	sd_bus_error_free(&error);
 	return r >= 0;
@@ -352,8 +355,7 @@ exit:
 	return r;
 }
 
-blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
-					 blz_disconn_handler_t cb)
+blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype)
 {
 	int r;
 	uint8_t mac[6];
@@ -460,7 +462,6 @@ blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype,
 		need_disconnect = true;
 	} else {
 		dev->connected = true;
-		dev->disconnect_cb = cb;
 	}
 
 exit:
@@ -474,6 +475,13 @@ exit:
 		return NULL;
 	}
 	return dev;
+}
+
+void blz_set_disconnect_handler(blz_dev* dev, blz_disconn_handler_t cb,
+								void* disconn_user)
+{
+	dev->disconnect_cb = cb;
+	dev->disconn_user = disconn_user;
 }
 
 static bool find_serv_by_uuid(blz_serv* srv)
@@ -744,13 +752,13 @@ static int blz_notify_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	r = msg_parse_notify(m, ch, &ptr, &len);
 
 	if (r > 0 && ptr != NULL) {
-		ch->notify_cb(ptr, len, ch);
+		ch->notify_cb(ptr, len, ch, ch->notify_user);
 	}
 
 	return 0;
 }
 
-bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
+bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
@@ -762,6 +770,7 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb)
 	}
 
 	ch->notify_cb = cb;
+	ch->notify_user = user;
 
 	r = sd_bus_match_signal(ch->ctx->bus, &ch->notify_slot, "org.bluez",
 							ch->path, "org.freedesktop.DBus.Properties",
@@ -792,9 +801,9 @@ exit:
 	return r >= 0;
 }
 
-bool blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb)
+bool blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb, void* user)
 {
-	return blz_char_notify_start(ch, cb);
+	return blz_char_notify_start(ch, cb, user);
 }
 
 bool blz_char_notify_stop(blz_char* ch)
@@ -817,6 +826,7 @@ bool blz_char_notify_stop(blz_char* ch)
 
 	ch->notify_slot = sd_bus_slot_unref(ch->notify_slot);
 	ch->notify_cb = NULL;
+	ch->notify_user = NULL;
 
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);

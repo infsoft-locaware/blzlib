@@ -16,7 +16,7 @@
 
 static sd_event* event = NULL;
 
-static void notify_handler(const uint8_t* data, size_t len, blz_char* ch)
+static void notify_handler(const uint8_t* data, size_t len, blz_char* ch, void* user)
 {
 	LOG_INF("RX: '%.*s'", (int)len - 1, data);
 }
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 
 	/* Connect to device */
 	LOG_INF("Connecting to %s...", argv[1]);
-	dev = blz_connect(blz, argv[1], BLZ_ADDR_UNKNOWN, NULL);
+	dev = blz_connect(blz, argv[1], BLZ_ADDR_UNKNOWN);
 	if (!dev) {
 		goto exit;
 	}
@@ -125,7 +125,7 @@ int main(int argc, char** argv)
 	}
 
 	/* Start to get notifications from read characteristic */
-	bool b = blz_char_notify_start(rch, notify_handler);
+	bool b = blz_char_notify_start(rch, notify_handler, NULL);
 	if (!b) {
 		goto exit;
 	}

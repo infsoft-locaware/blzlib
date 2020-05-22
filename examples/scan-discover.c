@@ -15,7 +15,7 @@ static int scan_idx = 0;
 static void discover(blz* blz, const char* mac)
 {
 	LOG_INF("Connecting to %s...", mac);
-	blz_dev* dev = blz_connect(blz, mac, BLZ_ADDR_UNKNOWN, NULL);
+	blz_dev* dev = blz_connect(blz, mac, BLZ_ADDR_UNKNOWN);
 	if (!dev) {
 		return;
 	}
@@ -38,8 +38,8 @@ static void discover(blz* blz, const char* mac)
 	blz_disconnect(dev);
 }
 
-static void scan_cb(const uint8_t* mac, int8_t rssi, const uint8_t* data,
-					size_t len)
+static void scan_cb(const uint8_t* mac, enum blz_addr_type atype, int8_t rssi,
+					const uint8_t* data, size_t len, void* user)
 {
 	/* Note: you can't connect in the scan callback! */
 
@@ -87,10 +87,10 @@ int main(int argc, char** argv)
 		}
 	} else {
 		LOG_INF("Cached devices...");
-		blz_known_devices(blz, scan_cb);
+		blz_known_devices(blz, scan_cb, NULL);
 
 		LOG_INF("Scanning for 10 seconds... press Ctrl-C to cancel...");
-		blz_scan_start(blz, scan_cb);
+		blz_scan_start(blz, scan_cb, NULL);
 
 		blz_loop_timeout(blz, &terminate, 10000);
 
