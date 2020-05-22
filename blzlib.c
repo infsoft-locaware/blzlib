@@ -952,3 +952,8 @@ int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms)
 
 	return *check ? 0 : -1;
 }
+
+int blz_get_fd(blz* ctx)
+{
+	return sd_bus_get_fd(ctx->bus);
+}
