@@ -17,7 +17,7 @@
 #include "blzlib_log.h"
 #include "blzlib_util.h"
 
-blz* blz_init(const char* dev)
+blz_ctx* blz_init(const char* dev)
 {
 	int r;
 	struct blz_context* ctx;
@@ -64,7 +64,7 @@ blz* blz_init(const char* dev)
 	return ctx;
 }
 
-void blz_fini(blz* ctx)
+void blz_fini(blz_ctx* ctx)
 {
 	if (ctx == NULL) {
 		return;
@@ -73,7 +73,7 @@ void blz_fini(blz* ctx)
 	free(ctx);
 }
 
-bool blz_known_devices(blz* ctx, blz_scan_handler_t cb, void* user)
+bool blz_known_devices(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
@@ -102,7 +102,7 @@ exit:
 
 static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 {
-	blz* ctx = user;
+	blz_ctx* ctx = user;
 
 	if (ctx == NULL || ctx->scan_cb == NULL) {
 		LOG_ERR("BLZ scan no callback");
@@ -113,7 +113,7 @@ static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	return msg_parse_object(m, ctx->path, MSG_DEVICE_SCAN, ctx);
 }
 
-bool blz_scan_start(blz* ctx, blz_scan_handler_t cb, void* user)
+bool blz_scan_start(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int r;
@@ -143,7 +143,7 @@ exit:
 	return r >= 0;
 }
 
-bool blz_scan_stop(blz* ctx)
+bool blz_scan_stop(blz_ctx* ctx)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int r;
@@ -355,7 +355,7 @@ exit:
 	return r;
 }
 
-blz_dev* blz_connect(blz* ctx, const char* macstr, enum blz_addr_type atype)
+blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 {
 	int r;
 	uint8_t mac[6];
@@ -917,7 +917,7 @@ void blz_char_free(blz_char* ch)
 	free(ch);
 }
 
-void blz_loop(blz* ctx, uint64_t timeout_us)
+static void blz_loop_one(blz_ctx* ctx, uint64_t timeout_us)
 {
 	int r = sd_bus_process(ctx->bus, NULL);
 	if (r < 0) {
@@ -937,7 +937,7 @@ void blz_loop(blz* ctx, uint64_t timeout_us)
 }
 
 /** return -1 on timeout */
-int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms)
+int blz_loop_timeout(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -945,7 +945,7 @@ int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms)
 	uint32_t end_ms = current_ms + timeout_ms;
 
 	while (!*check && current_ms < end_ms) {
-		blz_loop(ctx, (end_ms - current_ms) * 1000);
+		blz_loop_one(ctx, (end_ms - current_ms) * 1000);
 		clock_gettime(CLOCK_MONOTONIC, &ts);
 		current_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 	}
@@ -953,7 +953,16 @@ int blz_loop_timeout(blz* ctx, bool* check, uint32_t timeout_ms)
 	return *check ? 0 : -1;
 }
 
-int blz_get_fd(blz* ctx)
+int blz_get_fd(blz_ctx* ctx)
 {
 	return sd_bus_get_fd(ctx->bus);
+}
+
+void blz_handle_read(blz_ctx* ctx)
+{
+	int r = sd_bus_process(ctx->bus, NULL);
+	if (r < 0) {
+		LOG_ERR("BLZ loop process error: %s", strerror(-r));
+		return;
+	}
 }

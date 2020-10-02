@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv)
 {
-	blz* blz = NULL;
+	blz_ctx* blz = NULL;
 	blz_dev* dev = NULL;
 	blz_serv* srv = NULL;
 	blz_char* rch = NULL;

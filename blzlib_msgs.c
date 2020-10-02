@@ -347,7 +347,7 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath,
 		}
 
 		/* callback */
-		blz* ctx = user;
+		blz_ctx* ctx = user;
 		if (ctx != NULL && ctx->scan_cb != NULL) {
 			ctx->scan_cb(dev.mac, BLZ_ADDR_UNKNOWN, dev.rssi, NULL, 0, ctx->scan_user);
 		}

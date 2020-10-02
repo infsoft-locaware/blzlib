@@ -79,7 +79,7 @@ static void log_handler(enum loglevel ll, const char* fmt, va_list ap)
 
 int main(int argc, char** argv)
 {
-	blz* blz = NULL;	  // blz context
+	blz_ctx* blz = NULL;  // blz context
 	blz_dev* dev = NULL;  // device we connect to
 	blz_serv* srv = NULL; // NUS service
 	blz_char* wch = NULL; // characteristic to write to

@@ -12,7 +12,7 @@ static bool terminate = false;
 static uint8_t scanned_macs[6][MAX_SCAN];
 static int scan_idx = 0;
 
-static void discover(blz* blz, const char* mac)
+static void discover(blz_ctx* blz, const char* mac)
 {
 	LOG_INF("Connecting to %s...", mac);
 	blz_dev* dev = blz_connect(blz, mac, BLZ_ADDR_UNKNOWN);
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 	sigemptyset(&act.sa_mask);
 	sigaction(SIGINT, &act, NULL);
 
-	blz* blz = blz_init("hci0");
+	blz_ctx* blz = blz_init("hci0");
 	if (!blz) {
 		return EXIT_FAILURE;
 	}
