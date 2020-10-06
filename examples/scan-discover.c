@@ -43,8 +43,7 @@ static void scan_cb(const uint8_t* mac, enum blz_addr_type atype, int8_t rssi,
 {
 	/* Note: you can't connect in the scan callback! */
 
-	LOG_INF("SCAN " MAC_FMT " %d", MAC_PARR(mac), rssi);
-
+	LOG_INF("SCAN " MAC_FMT " %d %zd", MAC_PARR(mac), rssi, len);
 	if (data && len > 0) {
 		hex_dump("DATA: ", data, len);
 	}
@@ -55,7 +54,15 @@ static void scan_cb(const uint8_t* mac, enum blz_addr_type atype, int8_t rssi,
 		}
 	}
 
-	memcpy(scanned_macs[scan_idx++], mac, 6);
+	/* memcpy gives segfault on my PC */
+	//memcpy(scanned_macs[scan_idx++], mac, 6);
+	scanned_macs[scan_idx][0] = mac[0];
+	scanned_macs[scan_idx][1] = mac[1];
+	scanned_macs[scan_idx][2] = mac[2];
+	scanned_macs[scan_idx][3] = mac[3];
+	scanned_macs[scan_idx][4] = mac[4];
+	scanned_macs[scan_idx][5] = mac[5];
+	scan_idx++;
 
 	if (scan_idx >= MAX_SCAN) {
 		terminate = true;
