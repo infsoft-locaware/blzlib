@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 		LOG_INF("Scanning for 10 seconds... press Ctrl-C to cancel...");
 		blz_scan_start(blz, scan_cb, NULL);
 
-		blz_loop_timeout(blz, &terminate, 10000);
+		blz_loop_wait(blz, &terminate, 10000);
 
 		blz_scan_stop(blz);
 

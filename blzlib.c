@@ -227,7 +227,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 	}
 
 	/* wait for callback */
-	r = blz_loop_timeout(dev->ctx, &dev->connect_async_done,
+	r = blz_loop_wait(dev->ctx, &dev->connect_async_done,
 						 CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect timeout");
@@ -342,7 +342,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	}
 
 	/* wait for callback */
-	r = blz_loop_timeout(dev->ctx, &dev->connect_async_done,
+	r = blz_loop_wait(dev->ctx, &dev->connect_async_done,
 						 CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect new timeout");
@@ -455,7 +455,7 @@ blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 	/* wait until ServicesResolved property changed to true for this device.
 	 * we usually receive connected = true before that, but at that time we
 	 * are not ready yet to look up service and characteristic UUIDs */
-	r = blz_loop_timeout(ctx, &dev->services_resolved,
+	r = blz_loop_wait(ctx, &dev->services_resolved,
 						 SERV_RESOLV_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
@@ -790,7 +790,7 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user)
 	}
 
 	/* wait until Notifying property changed to true */
-	r = blz_loop_timeout(ch->ctx, &ch->notifying, 5000);
+	r = blz_loop_wait(ch->ctx, &ch->notifying, 5000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for Notifying");
 	}
@@ -917,7 +917,7 @@ void blz_char_free(blz_char* ch)
 	free(ch);
 }
 
-static void blz_loop_one(blz_ctx* ctx, uint64_t timeout_us)
+void blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms)
 {
 	int r = sd_bus_process(ctx->bus, NULL);
 	if (r < 0) {
@@ -930,14 +930,14 @@ static void blz_loop_one(blz_ctx* ctx, uint64_t timeout_us)
 		return;
 	}
 
-	r = sd_bus_wait(ctx->bus, timeout_us);
+	r = sd_bus_wait(ctx->bus, timeout_ms * 1000);
 	if (r < 0 && -r != EINTR) {
 		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
 }
 
 /** return -1 on timeout */
-int blz_loop_timeout(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
+int blz_loop_wait(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -945,7 +945,7 @@ int blz_loop_timeout(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
 	uint32_t end_ms = current_ms + timeout_ms;
 
 	while (!*check && current_ms < end_ms) {
-		blz_loop_one(ctx, (end_ms - current_ms) * 1000);
+		blz_loop_one(ctx, end_ms - current_ms);
 		clock_gettime(CLOCK_MONOTONIC, &ts);
 		current_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 	}
