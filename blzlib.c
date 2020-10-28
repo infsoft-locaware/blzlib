@@ -70,6 +70,7 @@ void blz_fini(blz_ctx* ctx)
 		return;
 	}
 	sd_bus_unref(ctx->bus);
+	ctx->bus = NULL;
 	free(ctx);
 }
 
@@ -870,7 +871,7 @@ exit:
 /** frees dev */
 void blz_disconnect(blz_dev* dev)
 {
-	if (!dev) {
+	if (!dev || !dev->ctx || !dev->ctx->bus) {
 		return;
 	}
 
@@ -917,26 +918,31 @@ void blz_char_free(blz_char* ch)
 	free(ch);
 }
 
-void blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms)
+bool blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms)
 {
+	if (!ctx || !ctx->bus) {
+		return false;
+	}
+
 	int r = sd_bus_process(ctx->bus, NULL);
 	if (r < 0) {
-		LOG_ERR("BLZ loop process error: %s", strerror(-r));
-		return;
+		LOG_ERR("BLZ loop process error1: %s", strerror(-r));
+		return false;
 	}
 
 	/* sd_bus_wait() should be called only if sd_bus_process() returned 0 */
 	if (r > 0) {
-		return;
+		return true;
 	}
 
 	r = sd_bus_wait(ctx->bus, timeout_ms * 1000);
 	if (r < 0 && -r != EINTR) {
 		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
 	}
+	return r >= 0;
 }
 
-/** return -1 on timeout */
+/** return -1 on timeout, -2 on error */
 int blz_loop_wait(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
 {
 	struct timespec ts;
@@ -945,7 +951,9 @@ int blz_loop_wait(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
 	uint32_t end_ms = current_ms + timeout_ms;
 
 	while (!*check && current_ms < end_ms) {
-		blz_loop_one(ctx, end_ms - current_ms);
+		if (!blz_loop_one(ctx, end_ms - current_ms)) {
+			return -2;
+		}
 		clock_gettime(CLOCK_MONOTONIC, &ts);
 		current_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 	}
@@ -962,7 +970,7 @@ void blz_handle_read(blz_ctx* ctx)
 {
 	int r = sd_bus_process(ctx->bus, NULL);
 	if (r < 0) {
-		LOG_ERR("BLZ loop process error: %s", strerror(-r));
+		LOG_ERR("BLZ loop process error2: %s", strerror(-r));
 		return;
 	}
 }

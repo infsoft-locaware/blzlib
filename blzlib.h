@@ -59,7 +59,7 @@ bool blz_char_notify_stop(blz_char* ch);
 /** returns fd or -1 on error. need to close(fd) to release */
 int blz_char_write_fd_acquire(blz_char* ch);
 
-void blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms);
+bool blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms);
 int blz_loop_wait(blz_ctx* ctx, bool* check, uint32_t timeout_ms);
 int blz_get_fd(blz_ctx* ctx);
 void blz_handle_read(blz_ctx* ctx);
