@@ -229,7 +229,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 
 	/* wait for callback */
 	r = blz_loop_wait(dev->ctx, &dev->connect_async_done,
-						 CONNECT_TIMEOUT * 1000);
+					  CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect timeout");
 	} else {
@@ -344,7 +344,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 
 	/* wait for callback */
 	r = blz_loop_wait(dev->ctx, &dev->connect_async_done,
-						 CONNECT_TIMEOUT * 1000);
+					  CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ connect new timeout");
 	} else {
@@ -456,8 +456,7 @@ blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 	/* wait until ServicesResolved property changed to true for this device.
 	 * we usually receive connected = true before that, but at that time we
 	 * are not ready yet to look up service and characteristic UUIDs */
-	r = blz_loop_wait(ctx, &dev->services_resolved,
-						 SERV_RESOLV_TIMEOUT * 1000);
+	r = blz_loop_wait(ctx, &dev->services_resolved, SERV_RESOLV_TIMEOUT * 1000);
 	if (r < 0) {
 		LOG_ERR("BLZ timeout waiting for ServicesResolved");
 		need_disconnect = true;
@@ -884,7 +883,8 @@ void blz_disconnect(blz_dev* dev)
 		int r;
 
 		r = sd_bus_call_method(dev->ctx->bus, "org.bluez", dev->path,
-							"org.bluez.Device1", "Disconnect", &error, NULL, "");
+							   "org.bluez.Device1", "Disconnect", &error, NULL,
+							   "");
 
 		if (r < 0) {
 			LOG_ERR("BLZ failed to disconnect: %s", error.message);
