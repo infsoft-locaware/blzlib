@@ -25,13 +25,13 @@ blz_ctx* blz_init(const char* dev)
 
 	ctx = calloc(1, sizeof(struct blz_context));
 	if (ctx == NULL) {
-		LOG_ERR("blz_context: alloc failed");
+		LOG_ERR("BLZ: blz_context alloc failed");
 		return NULL;
 	}
 
 	r = snprintf(ctx->path, DBUS_PATH_MAX_LEN, "/org/bluez/%s", dev);
 	if (r < 0 || r >= DBUS_PATH_MAX_LEN) {
-		LOG_ERR("BLZ init failed to construct path");
+		LOG_ERR("BLZ: Failed to construct path");
 		free(ctx);
 		return NULL;
 	}
@@ -39,7 +39,7 @@ blz_ctx* blz_init(const char* dev)
 	/* Connect to the system bus */
 	r = sd_bus_default_system(&ctx->bus);
 	if (r < 0) {
-		LOG_ERR("Failed to connect to system bus: %s", strerror(-r));
+		LOG_ERR("BLZ: Failed to connect to system bus: %s", strerror(-r));
 		free(ctx);
 		return NULL;
 	}
@@ -50,9 +50,9 @@ blz_ctx* blz_init(const char* dev)
 
 	if (r < 0) {
 		if (sd_bus_error_has_name(&error, SD_BUS_ERROR_UNKNOWN_OBJECT)) {
-			LOG_ERR("Adapter %s not known", dev);
+			LOG_ERR("BLZ: Adapter %s not known", dev);
 		} else {
-			LOG_ERR("BLZ failed to power on: %s", error.message);
+			LOG_ERR("BLZ: Failed to power on: %s", error.message);
 		}
 		sd_bus_error_free(&error);
 		sd_bus_unref(ctx->bus);
@@ -88,7 +88,7 @@ bool blz_known_devices(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 						   "GetManagedObjects", &error, &reply, "");
 
 	if (r < 0) {
-		LOG_ERR("Failed to get managed objects: %s", error.message);
+		LOG_ERR("BLZ: Failed to get managed objects: %s", error.message);
 		goto exit;
 	}
 
@@ -106,7 +106,7 @@ static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	blz_ctx* ctx = user;
 
 	if (ctx == NULL || ctx->scan_cb == NULL) {
-		LOG_ERR("BLZ scan no callback");
+		LOG_ERR("BLZ: Scan no callback");
 		return -1;
 	}
 
@@ -127,7 +127,7 @@ bool blz_scan_start(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 							"InterfacesAdded", blz_intf_cb, ctx);
 
 	if (r < 0) {
-		LOG_ERR("BLZ Failed to notify");
+		LOG_ERR("BLZ: Failed to notify");
 		goto exit;
 	}
 
@@ -136,7 +136,7 @@ bool blz_scan_start(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 						   "");
 
 	if (r < 0) {
-		LOG_ERR("BLZ failed to scan: %s", error.message);
+		LOG_ERR("BLZ: Failed to scan: %s", error.message);
 	}
 
 exit:
@@ -154,7 +154,7 @@ bool blz_scan_stop(blz_ctx* ctx)
 						   "");
 
 	if (r < 0) {
-		LOG_ERR("BLZ failed to stop scan: %s", error.message);
+		LOG_ERR("BLZ: Failed to stop scan: %s", error.message);
 	}
 
 	ctx->scan_slot = sd_bus_slot_unref(ctx->scan_slot);
@@ -170,7 +170,7 @@ static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	struct blz_dev* dev = user;
 
 	if (dev == NULL) {
-		LOG_ERR("BLZ connect no dev");
+		LOG_ERR("BLZ: Connect cb no dev");
 		return -1;
 	}
 
@@ -186,14 +186,14 @@ static int connect_known_cb(sd_bus_message* reply, void* userdata,
 	blz_dev* dev = (blz_dev*)userdata;
 
 	if (dev == NULL) {
-		LOG_ERR("BLZ connect cb no dev");
+		LOG_ERR("BLZ: Connect cb no dev");
 		return -1;
 	}
 
 	const sd_bus_error* err = sd_bus_message_get_error(reply);
 	if (err != NULL) {
 		r = -sd_bus_message_get_errno(reply);
-		LOG_INF("BLZ connect error: %s '%s' (%d)", err->name, err->message, r);
+		LOG_INF("BLZ: Connect error: %s '%s' (%d)", err->name, err->message, r);
 	}
 
 	dev->connect_async_result = r;
@@ -211,7 +211,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 									   "Connect");
 
 	if (r < 0) {
-		LOG_ERR("BLZ connect failed to create message: %d", r);
+		LOG_ERR("BLZ: Connect failed to create message: %d", r);
 		goto exit;
 	}
 
@@ -223,7 +223,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 						  CONNECT_TIMEOUT * 1000000);
 
 	if (r < 0) {
-		LOG_ERR("BLZ connect failed: %d", r);
+		LOG_ERR("BLZ: Connect failed (%d)", r);
 		goto exit;
 	}
 
@@ -231,7 +231,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 	r = blz_loop_wait(dev->ctx, &dev->connect_async_done,
 					  CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
-		LOG_ERR("BLZ connect timeout");
+		LOG_ERR("BLZ: Connect timeout");
 	} else {
 		r = dev->connect_async_result;
 	}
@@ -249,19 +249,19 @@ static int connect_new_cb(sd_bus_message* reply, void* userdata,
 	blz_dev* dev = (blz_dev*)userdata;
 
 	if (dev == NULL) {
-		LOG_ERR("BLZ connect new cb no dev");
+		LOG_ERR("BLZ: Connect new cb no dev");
 		return -1;
 	}
 
 	const sd_bus_error* err = sd_bus_message_get_error(reply);
 	if (err != NULL) {
 		if (sd_bus_error_has_name(err, SD_BUS_ERROR_UNKNOWN_METHOD)) {
-			LOG_NOTI("BLZ connect new failed: Bluez < 5.49 (with -E"
+			LOG_NOTI("BLZ: Connect new failed: Bluez < 5.49 (with -E"
 					 " flag) doesn't support ConnectDevice");
 			r = -2;
 		} else {
 			r = -sd_bus_message_get_errno(reply);
-			LOG_INF("BLZ connect new error: %s '%s' (%d)", err->name,
+			LOG_INF("BLZ: Connect new error: %s '%s' (%d)", err->name,
 					err->message, r);
 		}
 		goto exit;
@@ -269,12 +269,12 @@ static int connect_new_cb(sd_bus_message* reply, void* userdata,
 
 	r = sd_bus_message_read_basic(reply, 'o', &opath);
 	if (r < 0) {
-		LOG_ERR("BLZ connect new invalid reply");
+		LOG_ERR("BLZ: Connect new invalid reply");
 		goto exit;
 	}
 
 	if (strcmp(opath, dev->path) != 0) {
-		LOG_ERR("BLZ connect new device paths don't match (%s %s)", opath,
+		LOG_ERR("BLZ: Connect new device paths don't match (%s %s)", opath,
 				dev->path);
 		r = -1;
 		goto exit;
@@ -291,7 +291,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	int r;
 	sd_bus_message* call = NULL;
 
-	LOG_INF("Connect new to %s (%s)", macstr,
+	LOG_INF("BLZ: Connect new to %s (%s)", macstr,
 			addr_public ? "public" : "random");
 
 	r = sd_bus_message_new_method_call(dev->ctx->bus, &call, "org.bluez",
@@ -299,14 +299,14 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 									   "ConnectDevice");
 
 	if (r < 0) {
-		LOG_ERR("BLZ connect new failed to create message");
+		LOG_ERR("BLZ: Connect new failed to create message");
 		goto exit;
 	}
 
 	/* open array */
 	r = sd_bus_message_open_container(call, 'a', "{sv}");
 	if (r < 0) {
-		LOG_ERR("BLZ connect new failed to create message");
+		LOG_ERR("BLZ: Connect new failed to create message");
 		goto exit;
 	}
 
@@ -326,7 +326,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	/* close array */
 	r = sd_bus_message_close_container(call);
 	if (r < 0) {
-		LOG_ERR("BLZ connect new failed to create message");
+		LOG_ERR("BLZ: Connect new failed to create message");
 		goto exit;
 	}
 
@@ -338,7 +338,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	r = sd_bus_call_async(dev->ctx->bus, NULL, call, connect_new_cb, dev,
 						  CONNECT_TIMEOUT * 1000000);
 	if (r < 0) {
-		LOG_ERR("BLZ connect new failed: %d", r);
+		LOG_ERR("BLZ: Connect new failed: %d", r);
 		goto exit;
 	}
 
@@ -346,7 +346,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	r = blz_loop_wait(dev->ctx, &dev->connect_async_done,
 					  CONNECT_TIMEOUT * 1000);
 	if (r < 0) {
-		LOG_ERR("BLZ connect new timeout");
+		LOG_ERR("BLZ: Connect new timeout");
 	} else {
 		r = dev->connect_async_result;
 	}
@@ -366,7 +366,7 @@ blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 
 	struct blz_dev* dev = calloc(1, sizeof(struct blz_dev));
 	if (dev == NULL) {
-		LOG_ERR("blz_dev: alloc failed");
+		LOG_ERR("BLZ: Connect blz_dev alloc failed");
 		return NULL;
 	}
 
@@ -381,7 +381,7 @@ blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 				 mac[4], mac[3], mac[2], mac[1], mac[0]);
 
 	if (r < 0 || r >= DBUS_PATH_MAX_LEN) {
-		LOG_ERR("BLZ connect failed to construct device path");
+		LOG_ERR("BLZ: Connect failed to construct device path");
 		free(dev);
 		return NULL;
 	}
@@ -397,20 +397,20 @@ blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 			/* device is unknown, mark for ConnectDevice API below */
 			conn_status = -1;
 		} else {
-			LOG_ERR("BLZ failed to get connected: %s", error.message);
+			LOG_ERR("BLZ: Failed to get connected: %s", error.message);
 			goto exit;
 		}
 	}
 
 	if (conn_status == 1) {
-		LOG_NOTI("Device %s already was connected", macstr);
+		LOG_NOTI("BLZ: Device %s already was connected", macstr);
 		/* get ServicesResolved status */
 		int sr;
 		r = sd_bus_get_property_trivial(dev->ctx->bus, "org.bluez", dev->path,
 										"org.bluez.Device1", "ServicesResolved",
 										&error, 'b', &sr);
 		if (r < 0) {
-			LOG_ERR("BLZ failed to get ServicesResolved: %s", error.message);
+			LOG_ERR("BLZ: Failed to get ServicesResolved: %s", error.message);
 			need_disconnect = true;
 			goto exit;
 		}
@@ -426,7 +426,7 @@ blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 							"PropertiesChanged", blz_connect_cb, dev);
 
 	if (r < 0) {
-		LOG_ERR("BLZ Failed to add connect signal");
+		LOG_ERR("BLZ: Failed to add connect signal");
 		goto exit;
 	}
 
@@ -458,7 +458,7 @@ blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 	 * are not ready yet to look up service and characteristic UUIDs */
 	r = blz_loop_wait(ctx, &dev->services_resolved, SERV_RESOLV_TIMEOUT * 1000);
 	if (r < 0) {
-		LOG_ERR("BLZ timeout waiting for ServicesResolved");
+		LOG_ERR("BLZ: Timeout waiting for ServicesResolved");
 		need_disconnect = true;
 	} else {
 		dev->connected = true;
@@ -495,7 +495,7 @@ static bool find_serv_by_uuid(blz_serv* srv)
 						   "GetManagedObjects", &error, &reply, "");
 
 	if (r < 0) {
-		LOG_ERR("Failed to get managed objects: %s", error.message);
+		LOG_ERR("BLZ: Failed to get managed objects: %s", error.message);
 		goto exit;
 	}
 
@@ -513,7 +513,7 @@ blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid)
 	/* alloc serv structure for use later */
 	struct blz_serv* srv = calloc(1, sizeof(struct blz_serv));
 	if (srv == NULL) {
-		LOG_ERR("blz_srv: alloc failed");
+		LOG_ERR("BLZ: blz_srv alloc failed");
 		return NULL;
 	}
 
@@ -524,7 +524,7 @@ blz_serv* blz_get_serv_from_uuid(blz_dev* dev, const char* uuid)
 	/* this will try to find the uuid in char, fill required info */
 	bool b = find_serv_by_uuid(srv);
 	if (!b) {
-		LOG_ERR("Couldn't find service with UUID %s", uuid);
+		LOG_ERR("BLZ: Couldn't find service with UUID %s", uuid);
 		free(srv);
 		return NULL;
 	}
@@ -542,7 +542,7 @@ char** blz_list_service_uuids(blz_dev* dev)
 									 &dev->service_uuids);
 
 	if (r < 0) {
-		LOG_ERR("couldnt get services: %s", error.message);
+		LOG_ERR("BLZ: Couldn't get services: %s", error.message);
 	}
 
 	sd_bus_error_free(&error);
@@ -560,7 +560,7 @@ static bool find_char_by_uuid(blz_char* ch)
 						   "GetManagedObjects", &error, &reply, "");
 
 	if (r < 0) {
-		LOG_ERR("Failed to get managed objects: %s", error.message);
+		LOG_ERR("BLZ: Failed to get managed objects: %s", error.message);
 		goto exit;
 	}
 
@@ -584,7 +584,7 @@ char** blz_list_char_uuids(blz_serv* srv)
 						   "GetManagedObjects", &error, &reply, "");
 
 	if (r < 0) {
-		LOG_ERR("Failed to get managed objects: %s", error.message);
+		LOG_ERR("BLZ: Failed to get managed objects: %s", error.message);
 		goto exit;
 	}
 
@@ -599,7 +599,7 @@ char** blz_list_char_uuids(blz_serv* srv)
 	srv->char_uuids = calloc(cnt + 1, sizeof(char*));
 	srv->char_uuids[cnt] = NULL;
 	if (srv->char_uuids == NULL) {
-		LOG_ERR("BLZ alloc of chars failed");
+		LOG_ERR("BLZ: Alloc of chars failed");
 		goto exit;
 	}
 
@@ -622,7 +622,7 @@ blz_char* blz_get_char_from_uuid(blz_serv* srv, const char* uuid)
 	/* alloc char structure for use later */
 	struct blz_char* ch = calloc(1, sizeof(struct blz_char));
 	if (ch == NULL) {
-		LOG_ERR("blz_char: alloc failed");
+		LOG_ERR("BLZ: blz_char alloc failed");
 		return NULL;
 	}
 
@@ -633,12 +633,12 @@ blz_char* blz_get_char_from_uuid(blz_serv* srv, const char* uuid)
 	/* this will try to find the uuid in char, fill required info */
 	bool b = find_char_by_uuid(ch);
 	if (!b) {
-		LOG_ERR("Couldn't find characteristic with UUID %s", uuid);
+		LOG_ERR("BLZ: Couldn't find characteristic with UUID %s", uuid);
 		free(ch);
 		return NULL;
 	}
 
-	LOG_INF("Found characteristic with UUID %s", uuid);
+	LOG_INF("BLZ: Found characteristic with UUID %s", uuid);
 	return ch;
 }
 
@@ -650,7 +650,7 @@ bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len)
 	int r;
 
 	if (!(ch->flags & (BLZ_CHAR_WRITE | BLZ_CHAR_WRITE_WITHOUT_RESPONSE))) {
-		LOG_ERR("BLZ characteristic does not support write");
+		LOG_ERR("BLZ: Characteristic does not support write");
 		return false;
 	}
 
@@ -659,31 +659,31 @@ bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len)
 		"org.bluez.GattCharacteristic1", "WriteValue");
 
 	if (r < 0) {
-		LOG_ERR("BLZ write failed to create message");
+		LOG_ERR("BLZ: Frite failed to create message");
 		goto exit;
 	}
 
 	r = sd_bus_message_append_array(call, 'y', data, len);
 	if (r < 0) {
-		LOG_ERR("BLZ write failed to create message");
+		LOG_ERR("BLZ: Write failed to create message");
 		goto exit;
 	}
 
 	r = sd_bus_message_open_container(call, 'a', "{sv}");
 	if (r < 0) {
-		LOG_ERR("BLZ write failed to create message");
+		LOG_ERR("BLZ: Write failed to create message");
 		goto exit;
 	}
 
 	r = sd_bus_message_close_container(call);
 	if (r < 0) {
-		LOG_ERR("BLZ write failed to create message");
+		LOG_ERR("BLZ: Write failed to create message");
 		goto exit;
 	}
 
 	r = sd_bus_call(ch->ctx->bus, call, 0, &error, &reply);
 	if (r < 0) {
-		LOG_ERR("BLZ failed to write: %s", error.message);
+		LOG_ERR("BLZ: Failed to write: %s", error.message);
 		goto exit;
 	}
 
@@ -708,7 +708,7 @@ int blz_char_read(blz_char* ch, uint8_t* data, size_t len)
 	int r;
 
 	if (!(ch->flags & BLZ_CHAR_READ)) {
-		LOG_ERR("BLZ characteristic does not support read");
+		LOG_ERR("BLZ: Characteristic does not support read");
 		return false;
 	}
 
@@ -717,13 +717,13 @@ int blz_char_read(blz_char* ch, uint8_t* data, size_t len)
 						   &reply, "a{sv}", 0);
 
 	if (r < 0) {
-		LOG_ERR("BLZ failed to read: %s", error.message);
+		LOG_ERR("BLZ: Failed to read: %s", error.message);
 		goto exit;
 	}
 
 	r = sd_bus_message_read_array(reply, 'y', &ptr, &rlen);
 	if (r < 0) {
-		LOG_ERR("BLZ failed to read result: %s", error.message);
+		LOG_ERR("BLZ: Failed to read result: %s", error.message);
 		goto exit;
 	}
 
@@ -745,7 +745,7 @@ static int blz_notify_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	struct blz_char* ch = user;
 
 	if (ch == NULL || ch->notify_cb == NULL) {
-		LOG_ERR("BLZ signal no callback");
+		LOG_ERR("BLZ: Signal no callback");
 		return -1;
 	}
 
@@ -765,7 +765,7 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user)
 	int r;
 
 	if (!(ch->flags & (BLZ_CHAR_NOTIFY | BLZ_CHAR_INDICATE))) {
-		LOG_ERR("BLZ characteristic does not support notify");
+		LOG_ERR("BLZ: Characteristic does not support notify");
 		return false;
 	}
 
@@ -777,7 +777,7 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user)
 							"PropertiesChanged", blz_notify_cb, ch);
 
 	if (r < 0) {
-		LOG_ERR("BLZ Failed to notify");
+		LOG_ERR("BLZ: Failed to notify");
 		goto exit;
 	}
 
@@ -786,13 +786,13 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user)
 						   &error, &reply, "");
 
 	if (r < 0) {
-		LOG_ERR("BLZ Failed to start notify: %s", error.message);
+		LOG_ERR("BLZ: Failed to start notify: %s", error.message);
 	}
 
 	/* wait until Notifying property changed to true */
 	r = blz_loop_wait(ch->ctx, &ch->notifying, 5000);
 	if (r < 0) {
-		LOG_ERR("BLZ timeout waiting for Notifying");
+		LOG_ERR("BLZ: Timeout waiting for Notifying");
 	}
 
 exit:
@@ -821,7 +821,7 @@ bool blz_char_notify_stop(blz_char* ch)
 						   &error, &reply, "");
 
 	if (r < 0) {
-		LOG_ERR("BLZ Failed to stop notify: %s", error.message);
+		LOG_ERR("BLZ: Failed to stop notify: %s", error.message);
 	}
 
 	ch->notify_slot = sd_bus_slot_unref(ch->notify_slot);
@@ -841,7 +841,7 @@ int blz_char_write_fd_acquire(blz_char* ch)
 	int r;
 
 	if (!(ch->flags & BLZ_CHAR_WRITE_WITHOUT_RESPONSE)) {
-		LOG_ERR("BLZ characteristic does not support write-without-response");
+		LOG_WARN("BLZ: Characteristic does not support write-without-response");
 		return -1;
 	}
 
@@ -850,13 +850,13 @@ int blz_char_write_fd_acquire(blz_char* ch)
 						   &error, &reply, "a{sv}", 0);
 
 	if (r < 0) {
-		LOG_ERR("BLZ Failed acquire write: %s", error.message);
+		LOG_ERR("BLZ: Failed acquire write: %s", error.message);
 		goto exit;
 	}
 
 	r = sd_bus_message_read(reply, "h", &fd);
 	if (r < 0) {
-		LOG_ERR("BLZ Failed to get write fd");
+		LOG_ERR("BLZ: Failed to get write fd");
 	} else {
 		r = dup(fd);
 	}
@@ -887,7 +887,7 @@ void blz_disconnect(blz_dev* dev)
 							   "");
 
 		if (r < 0) {
-			LOG_ERR("BLZ failed to disconnect: %s", error.message);
+			LOG_ERR("BLZ: Failed to disconnect: %s", error.message);
 		}
 
 		sd_bus_error_free(&error);
@@ -928,7 +928,7 @@ bool blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms)
 
 	int r = sd_bus_process(ctx->bus, NULL);
 	if (r < 0) {
-		LOG_ERR("BLZ loop process error1: %s", strerror(-r));
+		LOG_ERR("BLZ: Loop process error: %s", strerror(-r));
 		return false;
 	}
 
@@ -939,7 +939,7 @@ bool blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms)
 
 	r = sd_bus_wait(ctx->bus, timeout_ms * 1000);
 	if (r < 0 && -r != EINTR) {
-		LOG_ERR("BLZ loop wait error: %s", strerror(-r));
+		LOG_ERR("BLZ: Loop wait error: %s", strerror(-r));
 	}
 	return r >= 0;
 }
@@ -972,7 +972,7 @@ void blz_handle_read(blz_ctx* ctx)
 {
 	int r = sd_bus_process(ctx->bus, NULL);
 	if (r < 0) {
-		LOG_ERR("BLZ loop process error2: %s", strerror(-r));
+		LOG_ERR("BLZ: Handle read process error: %s", strerror(-r));
 		return;
 	}
 }
