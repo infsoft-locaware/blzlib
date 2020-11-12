@@ -879,17 +879,19 @@ void blz_disconnect(blz_dev* dev)
 		dev->connect_slot = sd_bus_slot_unref(dev->connect_slot);
 	}
 
-	sd_bus_error error = SD_BUS_ERROR_NULL;
-	int r;
+	if (dev->connected) {
+		sd_bus_error error = SD_BUS_ERROR_NULL;
+		int r;
 
-	r = sd_bus_call_method(dev->ctx->bus, "org.bluez", dev->path,
-						   "org.bluez.Device1", "Disconnect", &error, NULL, "");
+		r = sd_bus_call_method(dev->ctx->bus, "org.bluez", dev->path,
+							"org.bluez.Device1", "Disconnect", &error, NULL, "");
 
-	if (r < 0) {
-		LOG_ERR("BLZ failed to disconnect: %s", error.message);
+		if (r < 0) {
+			LOG_ERR("BLZ failed to disconnect: %s", error.message);
+		}
+
+		sd_bus_error_free(&error);
 	}
-
-	sd_bus_error_free(&error);
 
 	/* free */
 	for (int i = 0; dev->service_uuids != NULL && dev->service_uuids[i] != NULL;
