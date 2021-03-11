@@ -37,7 +37,8 @@ bool blz_known_devices(blz_ctx* ctx, blz_scan_handler_t cb, void* user);
 bool blz_scan_start(blz_ctx* ctx, blz_scan_handler_t cb, void* user);
 bool blz_scan_stop(blz_ctx* ctx);
 
-blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype);
+blz_dev* blz_connect(blz_ctx* ctx, const char* macstr,
+					 enum blz_addr_type atype);
 
 void blz_set_disconnect_handler(blz_dev* dev, blz_disconn_handler_t cb,
 								void* user);
@@ -68,8 +69,6 @@ void blz_handle_read(blz_ctx* ctx);
 void blz_disconnect(blz_dev* dev);
 void blz_serv_free(blz_serv* srv);
 void blz_char_free(blz_char* ch);
-
-
 
 #ifdef __cplusplus
 }
