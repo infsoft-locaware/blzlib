@@ -9,7 +9,7 @@
 #define MAX_SCAN 10
 
 static bool terminate = false;
-static uint8_t scanned_macs[6][MAX_SCAN];
+static uint8_t scanned_macs[MAX_SCAN][6];
 static int scan_idx = 0;
 
 static void discover(blz_ctx* blz, const char* mac)
@@ -54,15 +54,7 @@ static void scan_cb(const uint8_t* mac, enum blz_addr_type atype, int8_t rssi,
 		}
 	}
 
-	/* memcpy gives segfault on my PC */
-	//memcpy(scanned_macs[scan_idx++], mac, 6);
-	scanned_macs[scan_idx][0] = mac[0];
-	scanned_macs[scan_idx][1] = mac[1];
-	scanned_macs[scan_idx][2] = mac[2];
-	scanned_macs[scan_idx][3] = mac[3];
-	scanned_macs[scan_idx][4] = mac[4];
-	scanned_macs[scan_idx][5] = mac[5];
-	scan_idx++;
+	memcpy(scanned_macs[scan_idx++], mac, 6);
 
 	if (scan_idx >= MAX_SCAN) {
 		terminate = true;
