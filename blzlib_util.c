@@ -33,7 +33,7 @@ uint8_t* blz_string_to_mac_s(const char* str)
 const char* blz_mac_to_string_s(const uint8_t mac[6])
 {
 	static char buf[18];
-	snprintf(buf, sizeof(buf)-1, MAC_FMT, MAC_PARR(mac));
+	snprintf(buf, sizeof(buf), MAC_FMT, MAC_PARR(mac));
 	buf[sizeof(buf)-1] = '\0';
 	return buf;
 }
