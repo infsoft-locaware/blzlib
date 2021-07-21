@@ -45,7 +45,8 @@ Here is a simple example how to write a characteristic:
 ```
 blz* blz = blz_init("hci0");
 blz_dev* dev = blz_connect(blz, "00:11:22:33:44:55", NULL);
-blz_char* ch = blz_get_char_from_uuid(dev, "6e400002-b5a3-f393-e0a9-e50e24dcca9e");
+blz_serv* srv = blz_get_serv_from_uuid(dev, "6e400001-b5a3-f393-e0a9-e50e24dcca9e");
+blz_char* ch = blz_get_char_from_uuid(srv, "6e400002-b5a3-f393-e0a9-e50e24dcca9e");
 blz_char_write(ch, "test", 4);
 ```
 
