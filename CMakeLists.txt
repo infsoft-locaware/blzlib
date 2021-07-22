@@ -1,11 +1,19 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(sdgatt VERSION 0.1.0)
 
-add_library(blzlib SHARED
-	blzlib.c
-	blzlib_msgs.c
-	blzlib_util.c
-	blzlib_log.c)
+option(BLZLIB_BUILD_SHARED "Build shared library" ON)
+
+set(BLZLIB_SRCS blzlib.c
+    blzlib_msgs.c
+    blzlib_util.c
+    blzlib_log.c)
+if(BLZLIB_BUILD_SHARED OR BUILD_SHARED_LIBS)
+    add_library(blzlib SHARED
+        ${BLZLIB_SRCS})
+else()
+    add_library(blzlib STATIC
+        ${BLZLIB_SRCS})
+endif()
 
 add_executable(blz-nordic-uart
 	examples/nordic-uart.c)
