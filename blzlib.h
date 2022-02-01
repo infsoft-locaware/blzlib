@@ -28,7 +28,7 @@ typedef void (*blz_notify_handler_t)(const uint8_t* data, size_t len,
 typedef void (*blz_scan_handler_t)(const uint8_t* mac, enum blz_addr_type atype,
 								   int8_t rssi, const uint8_t* data, size_t len,
 								   void* user);
-typedef void (*blz_disconn_handler_t)(void* user);
+typedef void (*blz_conn_handler_t)(bool connect, void* user);
 
 blz_ctx* blz_init(const char* dev);
 void blz_fini(blz_ctx* ctx);
@@ -40,8 +40,8 @@ bool blz_scan_stop(blz_ctx* ctx);
 blz_dev* blz_connect(blz_ctx* ctx, const char* macstr,
 					 enum blz_addr_type atype);
 
-void blz_set_disconnect_handler(blz_dev* dev, blz_disconn_handler_t cb,
-								void* user);
+void blz_set_connect_handler(blz_ctx* ctx, blz_conn_handler_t cb, void* user);
+
 
 /** returns NULL terminated list of service UUID strings, don't free them */
 char** blz_list_service_uuids(blz_dev* dev);

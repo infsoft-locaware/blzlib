@@ -477,11 +477,10 @@ exit:
 	return dev;
 }
 
-void blz_set_disconnect_handler(blz_dev* dev, blz_disconn_handler_t cb,
-								void* disconn_user)
+void blz_set_disconnect_handler(blz_ctx* ctx, blz_conn_handler_t cb, void* user)
 {
-	dev->disconnect_cb = cb;
-	dev->disconn_user = disconn_user;
+	ctx->connect_cb = cb;
+	ctx->connect_user = user;
 }
 
 static bool find_serv_by_uuid(blz_serv* srv)

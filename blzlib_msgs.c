@@ -248,8 +248,8 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 				return r;
 			}
 			dev->connected = b;
-			if (dev->disconnect_cb && !b) {
-				dev->disconnect_cb(dev->disconn_user);
+			if (dev && dev->ctx && dev->ctx->connect_cb) {
+				dev->ctx->connect_cb(b, dev->ctx->connect_user);
 			}
 		} else if (strcmp(str, "RSSI") == 0) {
 			r = msg_read_variant(m, "n", &dev->rssi);
@@ -349,7 +349,8 @@ int msg_parse_interface(sd_bus_message* m, enum msg_act act, const char* opath,
 		/* callback */
 		blz_ctx* ctx = user;
 		if (ctx != NULL && ctx->scan_cb != NULL) {
-			ctx->scan_cb(dev.mac, BLZ_ADDR_UNKNOWN, dev.rssi, NULL, 0, ctx->scan_user);
+			ctx->scan_cb(dev.mac, BLZ_ADDR_UNKNOWN, dev.rssi, NULL, 0,
+						 ctx->scan_user);
 		}
 
 		/* free uuids of temporary device */

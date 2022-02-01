@@ -25,6 +25,9 @@ struct blz_context {
 	blz_scan_handler_t scan_cb;
 	sd_bus_slot*	   scan_slot;
 	void*              scan_user;
+
+	blz_conn_handler_t connect_cb;
+	void*              connect_user;
 };
 
 struct blz_dev {
@@ -39,8 +42,6 @@ struct blz_dev {
 	bool				  services_resolved;
 	int16_t				  rssi;
 	char**				  service_uuids;
-	blz_disconn_handler_t disconnect_cb;
-	void*                 disconn_user;
 };
 
 struct blz_serv {
