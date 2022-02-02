@@ -477,7 +477,7 @@ exit:
 	return dev;
 }
 
-void blz_set_disconnect_handler(blz_ctx* ctx, blz_conn_handler_t cb, void* user)
+void blz_set_connect_handler(blz_ctx* ctx, blz_conn_handler_t cb, void* user)
 {
 	ctx->connect_cb = cb;
 	ctx->connect_user = user;
