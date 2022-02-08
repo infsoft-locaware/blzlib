@@ -1,5 +1,5 @@
 /*
- * blzlib - Copyright (C) 2019 Bruno Randolf (br1@einfach.org)
+ * blzlib - Copyright (C) 2019-2022 Bruno Randolf (br1@einfach.org)
  *
  * This source code is licensed under the GNU Lesser General Public License,
  * Version 3. See the file COPYING for more details.
@@ -74,7 +74,7 @@ void blz_fini(blz_ctx* ctx)
 	free(ctx);
 }
 
-bool blz_known_devices(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
+blz_ret blz_known_devices(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
@@ -98,7 +98,7 @@ bool blz_known_devices(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	return r >= 0;
+	return r >= 0 ? BLZ_OK : BLZ_ERR;
 }
 
 static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
@@ -114,7 +114,7 @@ static int blz_intf_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	return msg_parse_object(m, ctx->path, MSG_DEVICE_SCAN, ctx);
 }
 
-bool blz_scan_start(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
+blz_ret blz_scan_start(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int r;
@@ -141,10 +141,10 @@ bool blz_scan_start(blz_ctx* ctx, blz_scan_handler_t cb, void* user)
 
 exit:
 	sd_bus_error_free(&error);
-	return r >= 0;
+	return r >= 0 ? BLZ_OK : BLZ_ERR;
 }
 
-bool blz_scan_stop(blz_ctx* ctx)
+blz_ret blz_scan_stop(blz_ctx* ctx)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	int r;
@@ -162,7 +162,7 @@ bool blz_scan_stop(blz_ctx* ctx)
 	ctx->scan_user = NULL;
 
 	sd_bus_error_free(&error);
-	return r >= 0;
+	return r >= 0 ? BLZ_OK : BLZ_ERR;
 }
 
 static int blz_connect_cb(sd_bus_message* m, void* user, sd_bus_error* err)
@@ -230,7 +230,7 @@ static int blz_connect_known(blz_dev* dev, const char* macstr)
 	/* wait for callback */
 	r = blz_loop_wait(dev->ctx, &dev->connect_async_done,
 					  CONNECT_TIMEOUT * 1000);
-	if (r < 0) {
+	if (r != BLZ_OK) {
 		LOG_ERR("BLZ: Connect timeout");
 	} else {
 		r = dev->connect_async_result;
@@ -345,7 +345,7 @@ static int blz_connect_new(blz_dev* dev, const char* macstr, bool addr_public)
 	/* wait for callback */
 	r = blz_loop_wait(dev->ctx, &dev->connect_async_done,
 					  CONNECT_TIMEOUT * 1000);
-	if (r < 0) {
+	if (r != BLZ_OK) {
 		LOG_ERR("BLZ: Connect new timeout");
 	} else {
 		r = dev->connect_async_result;
@@ -457,7 +457,7 @@ blz_dev* blz_connect(blz_ctx* ctx, const char* macstr, enum blz_addr_type atype)
 	 * we usually receive connected = true before that, but at that time we
 	 * are not ready yet to look up service and characteristic UUIDs */
 	r = blz_loop_wait(ctx, &dev->services_resolved, SERV_RESOLV_TIMEOUT * 1000);
-	if (r < 0) {
+	if (r != BLZ_OK) {
 		LOG_ERR("BLZ: Timeout waiting for ServicesResolved");
 		need_disconnect = true;
 	} else {
@@ -641,7 +641,7 @@ blz_char* blz_get_char_from_uuid(blz_serv* srv, const char* uuid)
 	return ch;
 }
 
-bool blz_char_write(blz_char* ch, const uint8_t* data, size_t len)
+blz_ret blz_char_write(blz_char* ch, const uint8_t* data, size_t len)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* call = NULL;
@@ -690,10 +690,10 @@ exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(call);
 	sd_bus_message_unref(reply);
-	return r >= 0;
+	return r >= 0 ? BLZ_OK : BLZ_ERR;
 }
 
-bool blz_char_write_cmd(blz_char* ch, const uint8_t* data, size_t len)
+blz_ret blz_char_write_cmd(blz_char* ch, const uint8_t* data, size_t len)
 {
 	return blz_char_write(ch, data, len);
 }
@@ -757,7 +757,7 @@ static int blz_notify_cb(sd_bus_message* m, void* user, sd_bus_error* err)
 	return 0;
 }
 
-bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user)
+blz_ret blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
@@ -790,29 +790,30 @@ bool blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb, void* user)
 
 	/* wait until Notifying property changed to true */
 	r = blz_loop_wait(ch->ctx, &ch->notifying, 5000);
-	if (r < 0) {
+	if (r != BLZ_OK) {
 		LOG_ERR("BLZ: Timeout waiting for Notifying");
 	}
 
 exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	return r >= 0;
+	return r >= 0 ? BLZ_OK : BLZ_ERR;
 }
 
-bool blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb, void* user)
+blz_ret blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb,
+								void* user)
 {
 	return blz_char_notify_start(ch, cb, user);
 }
 
-bool blz_char_notify_stop(blz_char* ch)
+blz_ret blz_char_notify_stop(blz_char* ch)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
 	int r;
 
 	if (ch == NULL || ch->notify_slot == NULL) {
-		return false;
+		return BLZ_ERR_INVALID_PARAM;
 	}
 
 	r = sd_bus_call_method(ch->ctx->bus, "org.bluez", ch->path,
@@ -829,7 +830,7 @@ bool blz_char_notify_stop(blz_char* ch)
 
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	return r >= 0;
+	return r >= 0 ? BLZ_OK : BLZ_ERR;
 }
 
 int blz_char_write_fd_acquire(blz_char* ch)
@@ -919,32 +920,32 @@ void blz_char_free(blz_char* ch)
 	free(ch);
 }
 
-bool blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms)
+blz_ret blz_loop_one(blz_ctx* ctx, uint32_t timeout_ms)
 {
 	if (!ctx || !ctx->bus) {
-		return false;
+		return BLZ_ERR_INVALID_PARAM;
 	}
 
 	int r = sd_bus_process(ctx->bus, NULL);
 	if (r < 0) {
 		LOG_ERR("BLZ: Loop process error: %s", strerror(-r));
-		return false;
+		return BLZ_ERR_BUS;
 	}
 
 	/* sd_bus_wait() should be called only if sd_bus_process() returned 0 */
 	if (r > 0) {
-		return true;
+		return BLZ_OK;
 	}
 
 	r = sd_bus_wait(ctx->bus, timeout_ms * 1000);
 	if (r < 0 && -r != EINTR) {
 		LOG_ERR("BLZ: Loop wait error: %s", strerror(-r));
 	}
-	return r >= 0;
+	return r >= 0 ? BLZ_OK : BLZ_ERR;
 }
 
-/** return -1 on timeout, -2 on error */
-int blz_loop_wait(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
+/** returns BLZ_OK, BLZ_ERR_TIMEOUT on timeout, BLZ_ERR on error */
+blz_ret blz_loop_wait(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -952,14 +953,14 @@ int blz_loop_wait(blz_ctx* ctx, bool* check, uint32_t timeout_ms)
 	uint32_t end_ms = current_ms + timeout_ms;
 
 	while (!*check && current_ms < end_ms) {
-		if (!blz_loop_one(ctx, end_ms - current_ms)) {
-			return -2;
+		if (blz_loop_one(ctx, end_ms - current_ms) != BLZ_OK) {
+			return BLZ_ERR;
 		}
 		clock_gettime(CLOCK_MONOTONIC, &ts);
 		current_ms = ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 	}
 
-	return *check ? 0 : -1;
+	return *check ? BLZ_OK : BLZ_ERR_TIMEOUT;
 }
 
 int blz_get_fd(blz_ctx* ctx)
@@ -973,5 +974,29 @@ void blz_handle_read(blz_ctx* ctx)
 	if (r < 0) {
 		LOG_ERR("BLZ: Handle read process error: %s", strerror(-r));
 		return;
+	}
+}
+
+const char* blz_errstr(blz_ret r)
+{
+	switch (r) {
+	case BLZ_OK:
+		return "OK";
+	case BLZ_ERR:
+		return "ERR";
+	case BLZ_ERR_INVALID_PARAM:
+		return "INVALID_PARAM";
+	case BLZ_ERR_NOT_CONNECTED:
+		return "NOT_CONNECTED";
+	case BLZ_ERR_BUS:
+		return "ERR_BUS";
+	case BLZ_ERR_SIZE:
+		return "ERR_SIZE";
+	case BLZ_ERR_TIMEOUT:
+		return "ERR_TIMEOUT";
+	case BLZ_ERR_AUTH:
+		return "ERR_AUTH";
+	default:
+		return "ERR_INVALID";
 	}
 }

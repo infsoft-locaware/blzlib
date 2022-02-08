@@ -125,8 +125,8 @@ int main(int argc, char** argv)
 	}
 
 	/* Start to get notifications from read characteristic */
-	bool b = blz_char_notify_start(rch, notify_handler, NULL);
-	if (!b) {
+	blz_ret r = blz_char_notify_start(rch, notify_handler, NULL);
+	if (r != BLZ_OK) {
 		goto exit;
 	}
 
