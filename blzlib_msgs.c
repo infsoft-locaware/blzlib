@@ -1,5 +1,5 @@
 /*
- * blzlib - Copyright (C) 2019 Bruno Randolf (br1@einfach.org)
+ * blzlib - Copyright (C) 2019-2022 Bruno Randolf (br1@einfach.org)
  *
  * This source code is licensed under the GNU Lesser General Public License,
  * Version 3. See the file COPYING for more details.

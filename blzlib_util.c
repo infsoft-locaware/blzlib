@@ -1,5 +1,5 @@
 /*
- * blzlib - Copyright (C) 2019 Bruno Randolf (br1@einfach.org)
+ * blzlib - Copyright (C) 2019-2022 Bruno Randolf (br1@einfach.org)
  *
  * This source code is licensed under the GNU Lesser General Public License,
  * Version 3. See the file COPYING for more details.
@@ -34,7 +34,7 @@ const char* blz_mac_to_string_s(const uint8_t mac[6])
 {
 	static char buf[18];
 	snprintf(buf, sizeof(buf), MAC_FMT, MAC_PARR(mac));
-	buf[sizeof(buf)-1] = '\0';
+	buf[sizeof(buf) - 1] = '\0';
 	return buf;
 }
 
