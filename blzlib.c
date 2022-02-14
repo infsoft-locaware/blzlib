@@ -698,7 +698,7 @@ blz_ret blz_char_write_cmd(blz_char* ch, const uint8_t* data, size_t len)
 	return blz_char_write(ch, data, len);
 }
 
-int blz_char_read(blz_char* ch, uint8_t* data, size_t len)
+blz_ret blz_char_read(blz_char* ch, uint8_t* data, size_t* len)
 {
 	sd_bus_error error = SD_BUS_ERROR_NULL;
 	sd_bus_message* reply = NULL;
@@ -727,13 +727,15 @@ int blz_char_read(blz_char* ch, uint8_t* data, size_t len)
 	}
 
 	if (rlen > 0) {
-		memcpy(data, ptr, rlen < len ? rlen : len);
+		memcpy(data, ptr, rlen < *len ? rlen : *len);
 	}
+
+	*len = rlen;
 
 exit:
 	sd_bus_error_free(&error);
 	sd_bus_message_unref(reply);
-	return rlen;
+	return r >= 0 ? BLZ_OK : BLZ_ERR;
 }
 
 static int blz_notify_cb(sd_bus_message* m, void* user, sd_bus_error* err)

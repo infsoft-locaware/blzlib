@@ -48,8 +48,13 @@ int main(int argc, char** argv)
 	}
 
 	/* Read manufacturer name string */
-	int len = blz_char_read(rch, buf, 20);
-	LOG_INF("Manufacturer Name: '%.*s'", len, buf);
+	size_t len = 20;
+	blz_ret ret = blz_char_read(rch, buf, &len);
+	if (ret != BLZ_OK) {
+		LOG_ERR("Read failed %s", blz_errstr(ret));
+	} else {
+		LOG_INF("Manufacturer Name: '%.*s'", (int)len, buf);
+	}
 
 exit:
 	/* free pointers */

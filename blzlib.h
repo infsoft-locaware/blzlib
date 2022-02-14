@@ -64,7 +64,7 @@ blz_char* blz_get_char_from_uuid(blz_serv* srv, const char* uuid_char);
 
 blz_ret blz_char_write(blz_char* ch, const uint8_t* data, size_t len);
 blz_ret blz_char_write_cmd(blz_char* ch, const uint8_t* data, size_t len);
-int blz_char_read(blz_char* ch, uint8_t* data, size_t len);
+blz_ret blz_char_read(blz_char* ch, uint8_t* data, size_t* len);
 blz_ret blz_char_notify_start(blz_char* ch, blz_notify_handler_t cb,
 							  void* user);
 blz_ret blz_char_indicate_start(blz_char* ch, blz_notify_handler_t cb,
