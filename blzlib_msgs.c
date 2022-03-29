@@ -249,7 +249,7 @@ static int msg_parse_device1(sd_bus_message* m, const char* opath, blz_dev* dev)
 			}
 			dev->connected = b;
 			if (dev && dev->ctx && dev->ctx->connect_cb) {
-				dev->ctx->connect_cb(b, dev->ctx->connect_user);
+				dev->ctx->connect_cb(b, 0, false, dev->ctx->connect_user);
 			}
 		} else if (strcmp(str, "RSSI") == 0) {
 			r = msg_read_variant(m, "n", &dev->rssi);

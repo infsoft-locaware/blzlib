@@ -40,7 +40,8 @@ typedef void (*blz_notify_handler_t)(const uint8_t* data, size_t len,
 typedef void (*blz_scan_handler_t)(const uint8_t* mac, enum blz_addr_type atype,
 								   int8_t rssi, const uint8_t* data, size_t len,
 								   void* user);
-typedef void (*blz_conn_handler_t)(bool connect, void* user);
+typedef void (*blz_conn_handler_t)(bool connect, uint16_t conn_hdl, bool periph,
+								   void* user);
 
 blz_ctx* blz_init(const char* dev);
 void blz_fini(blz_ctx* ctx);
