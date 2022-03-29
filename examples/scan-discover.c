@@ -42,11 +42,14 @@ static void scan_cb(const uint8_t* mac, enum blz_addr_type atype, int8_t rssi,
 					const uint8_t* data, size_t len, void* user)
 {
 	/* Note: you can't connect in the scan callback! */
-
-	LOG_INF("SCAN " MAC_FMT " %d %zd", MAC_PARR(mac), rssi, len);
-	if (data && len > 0) {
+	char name[20];
+	if(len > 0)
+		LOG_INF("SCAN MAC: " MAC_FMT " NAME: %s RSSI: %d", MAC_PARR(mac),data, rssi);
+	else
+		LOG_INF("SCAN " MAC_FMT " RSSI: %d %zd", MAC_PARR(mac), rssi, len);
+	/*if (data && len > 0) {
 		hex_dump("DATA: ", data, len);
-	}
+	}*/
 
 	for (int i = 0; i < MAX_SCAN && scanned_macs[i] != NULL; i++) {
 		if (memcmp(scanned_macs[i], mac, 6) == 0) {
