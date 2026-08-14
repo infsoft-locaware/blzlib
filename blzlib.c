@@ -972,10 +972,22 @@ int blz_get_fd(blz_ctx* ctx)
 
 void blz_handle_read(blz_ctx* ctx)
 {
-	int r = sd_bus_process(ctx->bus, NULL);
-	if (r < 0) {
-		LOG_ERR("BLZ: Handle read process error: %s", strerror(-r));
-		return;
+	int r, i;
+	/* sd_bus_process() dispatches at most one message per call and returns
+	 * >0 while more work remains. Processing a single message per poll
+	 * wakeup leaves queued messages (e.g. a burst of notifications, or the
+	 * stream of RSSI PropertiesChanged during discovery) sitting until the
+	 * next fd event, which stalls the caller's event loop. Drain a bounded
+	 * burst so bursts are handled promptly; the cap prevents an unbounded
+	 * spin when the peer streams continuously. */
+	for (i = 0; i < 16; i++) {
+		r = sd_bus_process(ctx->bus, NULL);
+		if (r < 0) {
+			LOG_ERR("BLZ: Handle read process error: %s", strerror(-r));
+			return;
+		}
+		if (r == 0)
+			break;
 	}
 }
 
